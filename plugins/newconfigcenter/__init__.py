@@ -430,7 +430,7 @@ class NewConfigCenter(_PluginBase):
                                         'props': {
                                             'type': 'info',
                                             'variant': 'tonal',
-                                            'text': 'title：TMDB/豆瓣中的标题     en_title：TMDB中的英文标题（暂不支持豆瓣）     original_title：TMDB/豆瓣中的原语种标题     name：从文件名中识别的名称（同时存在中英文时，优先使用中文）     en_name：从文件名中识别的英文名称（可能为空）     original_name：原文件名（包括文件外缀）     year：年份     resourceType：资源类型     effect：特效     edition：版本（资源类型+特效）     videoFormat：分辨率     releaseGroup：制作组/字幕组     customization：自定义占位符     videoCodec：视频编码     audioCodec：音频编码     tmdbid：TMDB ID（非TMDB识别源时为空）     imdbid：IMDB ID（可能为空）     doubanid：豆瓣ID（非豆瓣识别源时为空）     part：段/节     fileExt：文件扩展名     customization：自定义占位符'
+                                            'text': '格式：1. title：TMDB/豆瓣中的标题、2. en_title：TMDB中的英文标题（暂不支持豆瓣）、3. original_title：TMDB/豆瓣中的原语种标题、4. name：从文件名中识别的名称（同时存在中英文时，优先使用中文）、5. en_name：从文件名中识别的英文名称（可能为空）、6. original_name：原文件名（包括文件外缀）、7. year：年份、8. resourceType：资源类型、9. effect：特效、10. edition：版本（资源类型+特效）、11. videoFormat：分辨率、12. releaseGroup：制作组/字幕组、13. customization：自定义占位符、14. videoCodec：视频编码、15. audioCodec：音频编码、16. tmdbid：TMDB ID（非TMDB识别源时为空）、17. imdbid：IMDB ID（可能为空）、18. doubanid：豆瓣ID（非豆瓣识别源时为空）、19. part：段/节、20. fileExt：文件扩展名、21. customization：自定义占位符'
                                         }
                                     }
                                 ]
@@ -472,7 +472,7 @@ class NewConfigCenter(_PluginBase):
                                         'props': {
                                             'type': 'info',
                                             'variant': 'tonal',
-                                            'text': 'season：季号     season_year：季年份     episode：集号     season_episode：季集 SxxExx     episode_title：集标题'
+                                            'text': '格式：1. season：季号，2. season_year：季年份，3. episode：集号，4. season_episode：季集 SxxExx，5.episode_title：集标题'
                                         }
                                     }
                                 ]
