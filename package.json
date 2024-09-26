@@ -506,14 +506,15 @@
         "v2": true
     },
     "ConfigCenter": {
-        "name": "配置中心",
+        "name": "新配置中心",
         "description": "快速调整部分系统设定。",
         "labels": "系统设置",
-        "version": "2.6",
+        "version": "2.6.5",
         "icon": "setting.png",
-        "author": "jxxghp",
+        "author": "guyue2005",
         "level": 1,
         "history": {
+            "v2.6": "新增电影、电视重命名提示",
             "v2.6": "支持DOH相关配置项",
             "v2.5": "增加Github加速服务器设置项"
         }
