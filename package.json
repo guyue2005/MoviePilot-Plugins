@@ -1,26 +1,39 @@
 {
-    "NewConfigCenter": {
-        "name": "新配置中心",
-        "description": "快速调整部分系统设定。",
-        "labels": "系统设置",
-        "version": "2.6.5",
-        "icon": "setting.png",
-        "author": "guyue2005",
-        "level": 1,
-        "history": {
-            "v2.6.5": "新增电影、电视重命名提示",
-            "v2.6": "支持DOH相关配置项",
-            "v2.5": "增加Github加速服务器设置项"
-        }
-    },
-    "NewCloudDiskDel": {
-        "name": "新云盘关键词文件删除",
-        "description": "根据关键词删除无用云盘资源文件。",
-        "labels": "媒体库",
-        "version": "1.0",
-        "icon": "clouddisk.png",
-        "author": "guyue2005",
-        "level": 1
-        }
+  "NewConfigCenter": {
+    "name": "新配置中心",
+    "description": "快速调整部分系统设定。",
+    "labels": "系统设置",
+    "version": "2.6.5",
+    "icon": "setting.png",
+    "author": "guyue2005",
+    "level": 1,
+    "history": {
+      "v2.6.5": "新增电影、电视重命名提示",
+      "v2.6": "支持DOH相关配置项",
+      "v2.5": "增加Github加速服务器设置项"
     }
+  },
+  "FileDelete": {
+    "name": "文件删除",
+    "description": "根据关键词删除特定格式的文件",
+    "labels": "工具",
+    "version": "1.1",
+    "icon": "https://raw.githubusercontent.com/thsrite/MoviePilot-Plugins/main/icons/copy_files.png",
+    "author": "guyue2005",
+    "level": 1,
+    "v2": true,
+    "history": {
+      "v1.0": "自定义删除指定文件"
+    }
+  },
+  "NewCloudDiskDel": {
+    "name": "新云盘关键词文件删除",
+    "description": "根据关键词删除无用云盘资源文件。",
+    "labels": "媒体库",
+    "version": "1.0",
+    "icon": "clouddisk.png",
+    "author": "guyue2005",
+    "level": 1
+  }
 }
+
