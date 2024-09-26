@@ -395,26 +395,34 @@ class ConfigCenter(_PluginBase):
                             }
                         ]
                     },
-                     {
-                        'component': 'VRow',
-                        'content': [
-                            {
-                                "component": "VCol",
-                                "props": {
-                                    "cols": 12
-                                },
-                                "content": [
-                                    {
-                                        "component": "VTextarea",
-                                        "props": {
-                                            "model": "MOVIE_RENAME_FORMAT",
-                                            "label": "电影重命名格式",
-                                            "placeholder": "原始格式：{{title}}{% if year %} ({{year}}){% endif %}/{{title}}{% if year %} ({{year}}){% endif %}{% if part %}-{{part}}{% endif %}{% if videoFormat %} - {{videoFormat}}{% endif %}{{fileExt}}"
-                                        }
-                                    }         
-                                ]
-                            }
-                        ]
+                    {
+                       'component': 'VRow',
+                       'content': [
+                           {
+                               'component': 'VCol',
+                               'props': {
+                                   'cols': 12
+                               },
+                               'content': [
+                                   {
+                                       'component': 'VTextarea',
+                                       'props': {
+                                           'model': 'MOVIE_RENAME_FORMAT',
+                                           'label': '电影重命名格式',
+                                           'placeholder': '原始格式：{{title}}{% if year %} ({{year}}){% endif %}/{{title}}{% if year %} ({{year}}){% endif %}{% if part %}-{{part}}{% endif %}{% if videoFormat %} - {{videoFormat}}{% endif %}{{fileExt}}'
+                                       }
+                                   },
+                                   {
+                                       'component': 'VBtn',
+                                       'props': {
+                                           'color': 'primary',
+                                           '@click': 'resetFormat'  // 绑定点击事件
+                                       },
+                                       'content': '还原原格式'
+                                   }
+                               ]
+                           }
+                       ]
                     },
                     {
                         'component': 'VRow',
