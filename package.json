@@ -13,20 +13,14 @@
             "v2.5": "增加Github加速服务器设置项"
         }
     },
-    "ZvideoHelpercs": {
-        "name": "极影视助手",
-        "description": "极影视功能扩展",
+    "NewCloudDiskDel": {
+        "name": "新云盘关键词文件删除",
+        "description": "根据关键词删除无用云盘资源文件。",
         "labels": "媒体库",
-        "version": "1.3",
-        "icon": "zvideo.png",
-        "author": "DzAvril",
-        "level": 1,
-        "v2": true,
-        "history": {
-            "v1.3": "降低对豆瓣接口的请求频率",
-            "v1.2": "修复无法获取豆瓣评分的问题",
-            "v1.1": "支持将极影视评分修改为豆瓣评分",
-            "v1.0": "同步极影视在看/已看状态到豆瓣"
+        "version": "1.0",
+        "icon": "clouddisk.png",
+        "author": "thsrite",
+        "level": 1
         }
     }
 }
