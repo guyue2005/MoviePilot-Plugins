@@ -409,30 +409,30 @@ class ConfigCenter(_PluginBase):
                                         "props": {
                                             "model": "MOVIE_RENAME_FORMAT",
                                             "label": "电影重命名格式",
-                                            "placeholder": "{{title}}{% if year %} ({{year}}){% endif %}/{{title}}{% if year %} ({{year}}){% endif %}{% if part %}-{{part}}{% endif %}{% if videoFormat %} - {{videoFormat}}{% endif %}{{fileExt}}",
-                                            "hint": "title: TMDB/豆瓣中的标题\n" +
-                                                     "en_title: TMDB中的英文标题（暂不支持豆瓣）\n" +
-                                                     "original_title: TMDB/豆瓣中的原语种标题\n" +
-                                                     "name: 从文件名中识别的名称（同时存在中英文时，优先使用中文）\n" +
-                                                     "en_name: 从文件名中识别的英文名称（可能为空）\n" +
-                                                     "original_name: 原文件名（包括文件外缀）\n" +
-                                                     "year: 年份\n" +
-                                                     "resourceType: 资源类型\n" +
-                                                     "effect: 特效\n" +
-                                                     "edition: 版本（资源类型+特效）\n" +
-                                                     "videoFormat: 分辨率\n" +
-                                                     "releaseGroup: 制作组/字幕组\n" +
-                                                     "customization: 自定义占位符\n" +
-                                                     "videoCodec: 视频编码\n" +
-                                                     "audioCodec: 音频编码\n" +
-                                                     "tmdbid: TMDB ID（非TMDB识别源时为空）\n" +
-                                                     "imdbid: IMDB ID（可能为空）\n" +
-                                                     "doubanid: 豆瓣ID（非豆瓣识别源时为空）\n" +
-                                                     "part: 段/节\n" +
-                                                     "fileExt: 文件扩展名\n" +
-                                                     "customization: 自定义占位符"
+                                            "placeholder": "原始格式：{{title}}{% if year %} ({{year}}){% endif %}/{{title}}{% if year %} ({{year}}){% endif %}{% if part %}-{{part}}{% endif %}{% if videoFormat %} - {{videoFormat}}{% endif %}{{fileExt}}"
                                         }
                                     }         
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        'component': 'VRow',
+                        'content': [
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VAlert',
+                                        'props': {
+                                            'type': 'info',
+                                            'variant': 'tonal',
+                                            'text': 'title： TMDB/豆瓣中的标题     en_title： TMDB中的英文标题（暂不支持豆瓣）     original_title： TMDB/豆瓣中的原语种标题     name： 从文件名中识别的名称（同时存在中英文时，优先使用中文）     en_name： 从文件名中识别的英文名称（可能为空）     original_name： 原文件名（包括文件外缀）     year： 年份     resourceType： 资源类型     effect： 特效     edition： 版本（资源类型+特效）     videoFormat： 分辨率     releaseGroup： 制作组/字幕组     customization： 自定义占位符     videoCodec： 视频编码     audioCodec： 音频编码     tmdbid： TMDB ID（非TMDB识别源时为空）     imdbid： IMDB ID（可能为空）     doubanid： 豆瓣ID（非豆瓣识别源时为空）     part： 段/节     fileExt： 文件扩展名     customization： 自定义占位符'
+                                        }
+                                    }
                                 ]
                             }
                         ]
@@ -451,12 +451,28 @@ class ConfigCenter(_PluginBase):
                                         "props": {
                                             "model": "TV_RENAME_FORMAT",
                                             "label": "电视剧重命名格式",
-                                            "placeholder": "{{title}}{% if year %} ({{year}}){% endif %}/Season {{season}}/{{title}} - {{season_episode}}{% if part %}-{{part}}{% endif %}{% if episode %} - 第 {{episode}} 集{% endif %}{{fileExt}}",
-                                            "hint": "season: 季号\n" +
-                                                     "season_year: 季年份\n" +
-                                                     "episode: 集号\n" +
-                                                     "season_episode: 季集 SxxExx\n" +
-                                                     "episode_title: 集标题"
+                                            "placeholder": "原始格式：{{title}}{% if year %} ({{year}}){% endif %}/Season {{season}}/{{title}} - {{season_episode}}{% if part %}-{{part}}{% endif %}{% if episode %} - 第 {{episode}} 集{% endif %}{{fileExt}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        'component': 'VRow',
+                        'content': [
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VAlert',
+                                        'props': {
+                                            'type': 'info',
+                                            'variant': 'tonal',
+                                            'text': 'season： 季号     season_year： 季年份     episode： 集号     season_episode： 季集 SxxExx     episode_title： 集标题'
                                         }
                                     }
                                 ]
