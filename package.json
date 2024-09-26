@@ -8,20 +8,10 @@
         "author": "guyue2005",
         "level": 1,
         "history": {
-            "v2.6": "新增电影、电视重命名提示",
+            "v2.6.5": "新增电影、电视重命名提示",
             "v2.6": "支持DOH相关配置项",
             "v2.5": "增加Github加速服务器设置项"
         }
-    },
-    "WorkWechatMsg": {
-        "name": "企微机器人消息推送",
-        "description": "支持使用企业微信群聊机器人发送消息通知。",
-        "labels": "消息通知",
-        "version": "1.0",
-        "icon": "Wecom_A.png",
-        "author": "叮叮当",
-        "level": 1,
-        "v2": true
     },
     "ZvideoHelper": {
         "name": "极影视助手",
