@@ -68,7 +68,7 @@ class FileDelete(_PluginBase):
                 return
             for mon_path in monitor_dirs:
                 if mon_path:
-                    self._dirconf[mon_path] = None  # 只需要监控目录，无需目的地
+                    self._dirconf[mon_path] = None
 
                 if self._enabled:
                     self._scheduler.add_job(func=self.delete_files, trigger='date',
@@ -90,30 +90,30 @@ class FileDelete(_PluginBase):
                 self._scheduler.start()
 
     def delete_files(self):
-    """
-    定时任务，删除文件
-    """
-    logger.info("开始全量删除监控目录 ...")
-    keywords = [kw.strip() for kw in self._keywords.split(",") if kw.strip()]
+        """
+        定时任务，删除文件
+        """
+        logger.info("开始全量删除监控目录 ...")
+        keywords = [kw.strip() for kw in self._keywords.split(",") if kw.strip()]
 
-    for mon_path in self._dirconf.keys():
-        logger.info(f"监控目录: {mon_path}")
-        files = SystemUtils.list_files(Path(mon_path), [ext.strip() for ext in self._rmt_mediaext.split(",")])
-        
-        for file in files:
-            logger.info(f"开始处理本地文件：{file}")
-            if any(keyword in str(file) for keyword in keywords):
-                logger.info(f"准备删除文件：{file}")
-                state, error = SystemUtils.delete(file)  # 假设有一个delete方法
-                if state == 0:
-                    logger.info(f"{file} 删除成功")
+        for mon_path in self._dirconf.keys():
+            logger.info(f"监控目录: {mon_path}")
+            files = SystemUtils.list_files(Path(mon_path), [ext.strip() for ext in self._rmt_mediaext.split(",")])
+            logger.info(f"找到 {len(files)} 个文件待处理。")
+
+            for file in files:
+                logger.info(f"开始处理文件：{file}，大小：{file.stat().st_size} bytes")
+                if any(keyword in str(file) for keyword in keywords):
+                    logger.info(f"文件 {file} 匹配关键词，准备删除。")
+                    state, error = SystemUtils.delete(file)
+                    if state == 0:
+                        logger.info(f"文件 {file} 删除成功，状态：{state}")
+                    else:
+                        logger.error(f"文件 {file} 删除失败，状态：{state}，错误信息：{error}")
                 else:
-                    logger.error(f"{file} 删除失败，错误信息：{error}")
-            else:
-                logger.info(f"文件 {file} 不符合关键词，跳过")
+                    logger.info(f"文件 {file} 不符合关键词，跳过")
 
-    logger.info("全量删除监控目录完成！")
-
+        logger.info("全量删除监控目录完成！")
 
     def __update_config(self):
         self.update_config({
@@ -312,8 +312,3 @@ class FileDelete(_PluginBase):
     def stop_service(self):
         if self._scheduler:
             self._scheduler.remove_all_jobs()
-            if self._scheduler.running:
-                self._event.set()
-                self._scheduler.shutdown()
-                self._event.clear()
-            self._scheduler = None
