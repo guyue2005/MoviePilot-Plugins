@@ -18,7 +18,7 @@ lock = threading.Lock()
 
 class FileDelete(_PluginBase):
     # 插件名称
-    plugin_name = "文件删除"
+    plugin_name = "云盘无用文件删除"
     # 插件描述
     plugin_desc = "自定义文件类型从源目录删除。"
     # 插件图标
