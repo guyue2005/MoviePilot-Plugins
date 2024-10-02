@@ -21,7 +21,7 @@ class FileDelete(_PluginBase):
     # 插件描述
     plugin_desc = "自定义文件类型从源目录删除，包括可选的空文件夹。"
     # 插件图标
-    plugin_icon = "https://raw.githubusercontent.com/guyue2004/MoviePilot-Plugins/main/icons/delete_files.png"
+    plugin_icon = "https://raw.githubusercontent.com/guyue2005/MoviePilot-Plugins/main/icons/delete_files.png"
     # 插件版本
     plugin_version = "1.4"
     # 插件作者
