@@ -1,19 +1,13 @@
 import datetime
-import random
 import threading
-import os
 from pathlib import Path
-from typing import List, Tuple, Dict, Any
-
+from typing import List, Dict, Any, Tuple
 import pytz
 from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
-
 from app.core.config import settings
 from app.log import logger
 from app.plugins import _PluginBase
-
-lock = threading.Lock()
+import os
 
 class FileDelete(_PluginBase):
     # 插件名称
@@ -38,14 +32,10 @@ class FileDelete(_PluginBase):
     _scheduler = None
     _enabled = False
     _onlyonce = False
-    _cron = None
-    _delay = None
     _monitor_dirs = ""
     _rmt_mediaext = None
     _keywords = None
-    _delete_empty_folders = False  # 是否删除空文件夹的开关
-
-    _event = threading.Event()
+    _delete_empty_dirs = False  # 新增：是否删除空文件夹的开关
 
     def init_plugin(self, config: dict = None):
         self._dirconf = {}
@@ -54,20 +44,22 @@ class FileDelete(_PluginBase):
             self._enabled = config.get("enabled")
             self._onlyonce = config.get("onlyonce")
             self._monitor_dirs = config.get("monitor_dirs") or ""
-            self._cron = config.get("cron")
-            self._delay = config.get("delay")
             self._rmt_mediaext = config.get("rmt_mediaext") or ".nfo, .jpg"
             self._keywords = config.get("keywords") or ""
-            self._delete_empty_folders = config.get("delete_empty_folders", False)  # 加载空文件夹删除开关
+            self._delete_empty_dirs = config.get("delete_empty_dirs", False)  # 获取空文件夹删除开关
 
         self.stop_service()
 
         if self._enabled or self._onlyonce:
             self._scheduler = BackgroundScheduler(timezone=settings.TZ)
-            monitor_dirs = self._monitor_dirs.split("\n")
+            monitor_dirs = [line.strip() for line in self._monitor_dirs.splitlines() if line.strip()]
+
+            logger.info(f"监控目录: {monitor_dirs}")
+
+            if not monitor_dirs:
+                return
             for mon_path in monitor_dirs:
-                if mon_path:
-                    self._dirconf[mon_path] = None
+                self._dirconf[mon_path] = None
 
                 if self._enabled:
                     self._scheduler.add_job(func=self.delete_files, trigger='date',
@@ -89,57 +81,60 @@ class FileDelete(_PluginBase):
                 self._scheduler.start()
 
     def delete_files(self):
-        """
-        定时任务，删除文件和空文件夹（如果开关开启）
-        """
         logger.info("开始全量删除监控目录 ...")
         keywords = [kw.strip() for kw in self._keywords.split(",") if kw.strip()]
 
         for mon_path in self._dirconf.keys():
-            files = SystemUtils.list_files(Path(mon_path), [ext.strip() for ext in self._rmt_mediaext.split(",")])
+            logger.info(f"检查目录：{mon_path}")
+            files = self.list_files(Path(mon_path), [ext.strip() for ext in self._rmt_mediaext.split(",")])
             
             for file in files:
-                logger.info(f"开始处理本地文件：{file}")
+                logger.info(f"开始处理文件：{file}")
                 if any(keyword in str(file) for keyword in keywords):
-                    logger.info(f"删除文件：{file}")
-                    try:
-                        os.remove(file)  # 使用 os.remove 删除文件
-                        logger.info(f"{file} 删除成功")
-                    except Exception as e:
-                        logger.error(f"删除文件 {file} 时出错: {e}")
+                    if os.path.exists(file):
+                        try:
+                            os.remove(file)
+                            logger.info(f"成功删除文件：{file}")
+                        except Exception as e:
+                            logger.error(f"删除文件 {file} 失败：{e}")
+                    else:
+                        logger.warning(f"文件 {file} 不存在，无法删除")
                 else:
                     logger.info(f"文件 {file} 不符合关键词，跳过")
 
-            # 如果开关开启，删除空文件夹
-            if self._delete_empty_folders:
-                self.delete_empty_folders(Path(mon_path))
+            # 检查并删除空文件夹
+            if self._delete_empty_dirs:
+                self.delete_empty_dirs(Path(mon_path))
 
         logger.info("全量删除监控目录完成！")
 
-    def delete_empty_folders(self, path: Path):
-        """删除空文件夹"""
-        for root, dirs, files in os.walk(path, topdown=False):
-            for dir_name in dirs:
-                dir_path = os.path.join(root, dir_name)
-                if not os.listdir(dir_path):  # 如果文件夹为空
+    def list_files(self, path: Path, extensions: List[str]) -> List[Path]:
+        """列出指定路径下的所有文件，过滤特定扩展名的文件"""
+        files = []
+        for ext in extensions:
+            files.extend(path.rglob(f"*{ext}"))
+        return files
+
+    def delete_empty_dirs(self, path: Path):
+        logger.info(f"检查并删除空文件夹：{path}")
+        for dirpath, dirnames, filenames in os.walk(path, topdown=False):
+            for dirname in dirnames:
+                dir_to_check = Path(dirpath) / dirname
+                if not os.listdir(dir_to_check):  # 判断文件夹是否为空
                     try:
-                        os.rmdir(dir_path)
-                        logger.info(f"删除空文件夹：{dir_path}")
-                    except OSError:
-                        logger.error(f"无法删除空文件夹 {dir_path}: 文件夹可能不为空或其他问题。")
-                else:
-                    logger.info(f"文件夹 {dir_path} 不为空，无法删除。")
+                        os.rmdir(dir_to_check)
+                        logger.info(f"成功删除空文件夹：{dir_to_check}")
+                    except Exception as e:
+                        logger.error(f"删除空文件夹 {dir_to_check} 失败：{e}")
 
     def __update_config(self):
         self.update_config({
             "enabled": self._enabled,
             "onlyonce": self._onlyonce,
             "monitor_dirs": self._monitor_dirs,
-            "cron": self._cron,
-            "delay": self._delay,
             "rmt_mediaext": self._rmt_mediaext,
             "keywords": self._keywords,
-            "delete_empty_folders": self._delete_empty_folders  # 更新空文件夹删除开关状态
+            "delete_empty_dirs": self._delete_empty_dirs  # 保存空文件夹删除开关状态
         })
 
     def get_state(self) -> bool:
@@ -153,11 +148,10 @@ class FileDelete(_PluginBase):
         pass
 
     def get_service(self) -> List[Dict[str, Any]]:
-        if self._enabled and self._cron:
+        if self._enabled:
             return [{
                 "id": "FileDelete",
-                "name": "云盘无用文件删除",
-                "trigger": CronTrigger.from_crontab(self._cron),
+                "name": "文件删除",
                 "func": self.delete_files,
                 "kwargs": {}
             }]
@@ -186,6 +180,22 @@ class FileDelete(_PluginBase):
                                         }
                                     }
                                 ]
+                            },
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12,
+                                    'md': 4
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VSwitch',
+                                        'props': {
+                                            'model': 'delete_empty_dirs',
+                                            'label': '清理空文件夹',
+                                        }
+                                    }
+                                ]                 
                             },
                             {
                                 'component': 'VCol',
@@ -310,26 +320,6 @@ class FileDelete(_PluginBase):
                             }
                         ]
                     },
-                    {
-                        'component': 'VRow',
-                        'content': [
-                            {
-                                'component': 'VCol',
-                                'props': {
-                                    'cols': 12
-                                },
-                                'content': [
-                                    {
-                                        'component': 'VSwitch',
-                                        'props': {
-                                            'model': 'delete_empty_folders',
-                                            'label': '删除空文件夹',
-                                        }
-                                    }
-                                ]
-                            }
-                        ]
-                    },
                 ]
             }
         ], {
@@ -340,7 +330,7 @@ class FileDelete(_PluginBase):
             "delay": "20,1-10",
             "rmt_mediaext": ".nfo, .jpg, .mp4, .mkv, .png, .jpg, .pdf, .docx",
             "keywords": "",
-            "delete_empty_folders": False
+            "delete_empty_dirs": False  # 默认不删除空文件夹
         }
 
     def get_page(self) -> List[dict]:
@@ -350,7 +340,5 @@ class FileDelete(_PluginBase):
         if self._scheduler:
             self._scheduler.remove_all_jobs()
             if self._scheduler.running:
-                self._event.set()
                 self._scheduler.shutdown()
-                self._event.clear()
             self._scheduler = None
