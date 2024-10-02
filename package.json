@@ -17,12 +17,15 @@
     "name": "云盘无用文件删除",
     "description": "根据关键词删除特定格式的文件",
     "labels": "工具",
-    "version": "1.2",
-    "icon": "https://raw.githubusercontent.com/thsrite/MoviePilot-Plugins/main/icons/copy_files.png",
+    "version": "1.4",
+    "icon": "https://raw.githubusercontent.com/guyue2005/MoviePilot-Plugins/main/icons/copy_files.png",
     "author": "guyue2005",
     "level": 1,
     "v2": true,
     "history": {
+      "v1.4": "增加空文件的删除选项",
+      "v1.3": "增加文件格式选项",
+      "v1.2": "添加关键词的识别",
       "v1.1": "修正删除无日志的问题",
       "v1.0": "自定义删除指定文件"
     }
