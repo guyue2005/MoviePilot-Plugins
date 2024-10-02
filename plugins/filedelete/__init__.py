@@ -21,7 +21,7 @@ class FileDelete(_PluginBase):
     # 插件描述
     plugin_desc = "自定义文件类型从源目录删除，包括可选的空文件夹。"
     # 插件图标
-    plugin_icon = "https://raw.githubusercontent.com/guyue2005/MoviePilot-Plugins/main/icons/delete_files.png"
+    plugin_icon = "https://raw.githubusercontent.com/guyue2004/MoviePilot-Plugins/main/icons/delete_files.png"
     # 插件版本
     plugin_version = "1.4"
     # 插件作者
@@ -122,8 +122,13 @@ class FileDelete(_PluginBase):
             for dir_name in dirs:
                 dir_path = os.path.join(root, dir_name)
                 if not os.listdir(dir_path):  # 如果文件夹为空
-                    logger.info(f"删除空文件夹：{dir_path}")
-                    os.rmdir(dir_path)
+                    try:
+                        os.rmdir(dir_path)
+                        logger.info(f"删除空文件夹：{dir_path}")
+                    except OSError:
+                        logger.error(f"无法删除空文件夹 {dir_path}: 文件夹可能不为空或其他问题。")
+                else:
+                    logger.info(f"文件夹 {dir_path} 不为空，无法删除。")
 
     def __update_config(self):
         self.update_config({
