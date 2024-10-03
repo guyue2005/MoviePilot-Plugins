@@ -35,7 +35,6 @@ class FileDelete(_PluginBase):
     _monitor_dirs = ""
     _rmt_mediaext = None
     _keywords = None
-    _delete_empty_dirs = False  # 新增：是否删除空文件夹的开关
 
     def init_plugin(self, config: dict = None):
         self._dirconf = {}
@@ -46,14 +45,14 @@ class FileDelete(_PluginBase):
             self._monitor_dirs = config.get("monitor_dirs") or ""
             self._rmt_mediaext = config.get("rmt_mediaext") or ".nfo, .jpg"
             self._keywords = config.get("keywords") or ""
-            self._delete_empty_dirs = config.get("delete_empty_dirs", False)  # 获取空文件夹删除开关
+            self._delete_empty_dirs = config.get("delete_empty_dirs", False)
 
         self.stop_service()
 
         if self._enabled or self._onlyonce:
             self._scheduler = BackgroundScheduler(timezone=settings.TZ)
             monitor_dirs = [line.strip() for line in self._monitor_dirs.splitlines() if line.strip()]
-
+            
             logger.info(f"监控目录: {monitor_dirs}")
 
             if not monitor_dirs:
@@ -85,11 +84,10 @@ class FileDelete(_PluginBase):
         keywords = [kw.strip() for kw in self._keywords.split(",") if kw.strip()]
 
         for mon_path in self._dirconf.keys():
-            logger.info(f"检查目录：{mon_path}")
-            files = self.list_files(Path(mon_path), [ext.strip() for ext in self._rmt_mediaext.split(",")])
+            files = SystemUtils.list_files(Path(mon_path), [ext.strip() for ext in self._rmt_mediaext.split(",")])
             
             for file in files:
-                logger.info(f"开始处理文件：{file}")
+                logger.info(f"开始处理本地文件：{file}")
                 if any(keyword in str(file) for keyword in keywords):
                     if os.path.exists(file):
                         try:
@@ -98,34 +96,26 @@ class FileDelete(_PluginBase):
                         except Exception as e:
                             logger.error(f"删除文件 {file} 失败：{e}")
                     else:
-                        logger.warning(f"文件 {file} 不存在，无法删除")
+                        logger.error(f"文件 {file} 不存在，无法删除")
                 else:
                     logger.info(f"文件 {file} 不符合关键词，跳过")
 
-            # 检查并删除空文件夹
-            if self._delete_empty_dirs:
-                self.delete_empty_dirs(Path(mon_path))
+        # 删除空文件夹逻辑
+        if self._delete_empty_dirs:
+            logger.info("开始删除空文件夹 ...")
+            for mon_path in self._dirconf.keys():
+                for root, dirs, files in os.walk(mon_path, topdown=False):
+                    for dir_name in dirs:
+                        dir_path = os.path.join(root, dir_name)
+                        if not os.listdir(dir_path):  # 如果文件夹为空
+                            try:
+                                os.rmdir(dir_path)
+                                logger.info(f"成功删除空文件夹：{dir_path}")
+                            except Exception as e:
+                                logger.error(f"删除空文件夹 {dir_path} 失败：{e}")
 
         logger.info("全量删除监控目录完成！")
 
-    def list_files(self, path: Path, extensions: List[str]) -> List[Path]:
-        """列出指定路径下的所有文件，过滤特定扩展名的文件"""
-        files = []
-        for ext in extensions:
-            files.extend(path.rglob(f"*{ext}"))
-        return files
-
-    def delete_empty_dirs(self, path: Path):
-        logger.info(f"检查并删除空文件夹：{path}")
-        for dirpath, dirnames, filenames in os.walk(path, topdown=False):
-            for dirname in dirnames:
-                dir_to_check = Path(dirpath) / dirname
-                if not os.listdir(dir_to_check):  # 判断文件夹是否为空
-                    try:
-                        os.rmdir(dir_to_check)
-                        logger.info(f"成功删除空文件夹：{dir_to_check}")
-                    except Exception as e:
-                        logger.error(f"删除空文件夹 {dir_to_check} 失败：{e}")
 
     def __update_config(self):
         self.update_config({
@@ -133,8 +123,7 @@ class FileDelete(_PluginBase):
             "onlyonce": self._onlyonce,
             "monitor_dirs": self._monitor_dirs,
             "rmt_mediaext": self._rmt_mediaext,
-            "keywords": self._keywords,
-            "delete_empty_dirs": self._delete_empty_dirs  # 保存空文件夹删除开关状态
+            "keywords": self._keywords
         })
 
     def get_state(self) -> bool:
@@ -192,10 +181,10 @@ class FileDelete(_PluginBase):
                                         'component': 'VSwitch',
                                         'props': {
                                             'model': 'delete_empty_dirs',
-                                            'label': '清理空文件夹',
+                                            'label': '删除空文件夹',
                                         }
                                     }
-                                ]                 
+                                ]
                             },
                             {
                                 'component': 'VCol',
@@ -291,7 +280,7 @@ class FileDelete(_PluginBase):
                                             'model': 'rmt_mediaext',
                                             'label': '文件格式',
                                             'rows': 2,
-                                            'placeholder': ".nfo, .jpg, .mp4, .mkv, .png, .jpg, .pdf, .docx"
+                                            'placeholder': ".nfo,.jpg,.mp4,.mkv,.png,.jpg,.pdf,.docx"
                                         }
                                     }
                                 ]
@@ -313,7 +302,7 @@ class FileDelete(_PluginBase):
                                             'model': 'keywords',
                                             'label': '删除关键词',
                                             'rows': 2,
-                                            'placeholder': "关键词1, 关键词2"
+                                            'placeholder': "关键词1,关键词2"
                                         }
                                     }
                                 ]
@@ -328,9 +317,8 @@ class FileDelete(_PluginBase):
             "monitor_dirs": "",
             "cron": "",
             "delay": "20,1-10",
-            "rmt_mediaext": ".nfo, .jpg, .mp4, .mkv, .png, .jpg, .pdf, .docx",
-            "keywords": "",
-            "delete_empty_dirs": False  # 默认不删除空文件夹
+            "rmt_mediaext": ".nfo,.jpg,.mp4,.mkv,.png, .jpg,.pdf,.docx",
+            "keywords": ""
         }
 
     def get_page(self) -> List[dict]:
