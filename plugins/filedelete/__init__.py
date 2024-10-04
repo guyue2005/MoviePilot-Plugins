@@ -36,6 +36,12 @@ class FileDelete(_PluginBase):
     _format = None
     _keywords = None
     _delete_files_enabled = True  # 默认为启用文件删除
+    
+    def __init__(self):
+        self._delete_empty_dirs = False  # 确保这一行存在
+        self._delete_english_dirs = False
+        self._delete_small_dirs = False
+        self._delete_files_enabled = True 
 
     def init_plugin(self, config: dict = None):
         self._dirconf = {}
@@ -51,9 +57,12 @@ class FileDelete(_PluginBase):
             self._small_dir_size_threshold = int(config.get("small_dir_size_threshold", 10))
             self._delete_files_enabled = config.get("delete_files_enabled", True)  # 读取文件删除开关
             
+         
+        
         logger.info(f"插件初始化状态: enabled={self._enabled}, onlyonce={self._onlyonce}, "
                         f"delete_empty_dirs={self._delete_empty_dirs}, delete_english_dirs={self._delete_english_dirs}, "
-                        f"delete_small_dirs={self._delete_small_dirs}, delete_files_enabled={self._delete_files_enabled}")
+                        f"delete_small_dirs={self._delete_small_dirs}, delete_files_enabled={self._delete_files_enabled}")     
+                        
         self.stop_service()
 
         if self._enabled or self._onlyonce:
@@ -160,7 +169,7 @@ class FileDelete(_PluginBase):
 
 
     def delete_small_dirs(self):
-        if not self._delete_small_dirs:  # 检查小目录删除功能是否启用
+        if not self._delete_small_dirs:  # 检查目录删除功能是否启用
             logger.info(f"目录删除功能状态: {self._delete_small_dirs}")
             logger.info("目录删除功能未启用，跳过删除操作")
 
@@ -183,11 +192,11 @@ class FileDelete(_PluginBase):
                         if not os.listdir(dir_path):  # 如果目录为空
                             try:
                                 os.rmdir(dir_path)
-                                logger.info(f"成功删除小目录：{dir_path}")
+                                logger.info(f"成功删除目录：{dir_path}")
                             except Exception as e:
-                                logger.error(f"删除小目录 {dir_path} 失败：{e}")
+                                logger.error(f"删除目录 {dir_path} 失败：{e}")
                         else:
-                            logger.info(f"小目录 {dir_path} 不是空的，跳过删除。")
+                            logger.info(f"目录 {dir_path} 不是空的，跳过删除。")
 
     def delete_empty_dirs(self):
         if not self._delete_empty_dirs:  # 检查是否启用空目录删除功能
@@ -313,7 +322,7 @@ class FileDelete(_PluginBase):
                                         'props': {
                                             'model': 'delete_english_dirs',
                                             'label': '删除英文目录',
-                                            'disabled': self._delete_small_dirs or self._delete_files_enabled   # 根据小目录状态禁用
+                                            'disabled': self._delete_small_dirs  # 根据小目录状态禁用
                                         }
                                     }
                                 ]
