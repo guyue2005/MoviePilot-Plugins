@@ -37,11 +37,6 @@ class FileDelete(_PluginBase):
     _keywords = None
     _delete_files_enabled = True  # 默认为启用文件删除
     
-    def __init__(self):
-        self._delete_empty_dirs = False  # 确保这一行存在
-        self._delete_english_dirs = False
-        self._delete_small_dirs = False
-        self._delete_files_enabled = True 
 
     def init_plugin(self, config: dict = None):
         self._dirconf = {}
