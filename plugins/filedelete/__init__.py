@@ -13,9 +13,9 @@ class FileDelete(_PluginBase):
     # 插件名称
     plugin_name = "云盘无用文件删除"
     # 插件描述
-    plugin_desc = "自定义文件类型从源目录删除，包括可选的空文件夹。"
+    plugin_desc = "自定义文件类型从源目录删除，包括可选的空目录。"
     # 插件图标
-    plugin_icon = "https://raw.githubusercontent.com/guyue2005/MoviePilot-Plugins/main/icons/delete_files.png"
+    plugin_icon = "https://raw.githubusercontent.com/guyue2005/MoviePilot-Plugins/main/icons/delete.png"
     # 插件版本
     plugin_version = "1.4"
     # 插件作者
@@ -139,17 +139,17 @@ class FileDelete(_PluginBase):
         any_delete_operation = False
 
         if self._delete_small_dirs:
-            logger.info("准备删除小文件夹 ...")
+            logger.info("准备删除目录 ...")
             self.delete_small_dirs()
             any_delete_operation = True
 
         if self._delete_empty_dirs:
-            logger.info("准备删除空文件夹 ...")
+            logger.info("准备删除空目录 ...")
             self.delete_empty_dirs()
             any_delete_operation = True
 
         if self._delete_english_dirs:
-            logger.info("准备删除英文文件夹 ...")
+            logger.info("准备删除英文目录 ...")
             self.delete_english_dirs()
             any_delete_operation = True
 
@@ -160,11 +160,11 @@ class FileDelete(_PluginBase):
 
 
     def delete_small_dirs(self):
-        if not self._delete_small_dirs:  # 检查小文件夹删除功能是否启用
-            logger.info(f"小文件夹删除功能状态: {self._delete_small_dirs}")
-            logger.info("小文件夹删除功能未启用，跳过删除操作")
+        if not self._delete_small_dirs:  # 检查小目录删除功能是否启用
+            logger.info(f"目录删除功能状态: {self._delete_small_dirs}")
+            logger.info("目录删除功能未启用，跳过删除操作")
 
-        logger.info("开始删除小文件夹 ...")
+        logger.info("开始删除目录 ...")
         size_threshold = int(self._small_dir_size_threshold) * 1024 * 1024
         for mon_path in self._dirconf.keys():
             for root, dirs, _ in os.walk(mon_path, topdown=False):
@@ -175,26 +175,26 @@ class FileDelete(_PluginBase):
                         dir_size = sum(os.path.getsize(os.path.join(dir_path, f)) for f in os.listdir(dir_path)
                                        if os.path.isfile(os.path.join(dir_path, f)))
                     except Exception as e:
-                        logger.error(f"计算文件夹大小失败 {dir_path}：{e}")
+                        logger.error(f"计算目录大小失败 {dir_path}：{e}")
                         continue
 
-                    logger.info(f"文件夹 {dir_path} 的大小为 {dir_size} 字节")
+                    logger.info(f"目录 {dir_path} 的大小为 {dir_size} 字节")
                     if dir_size < size_threshold:  # 确保dir_size是int
-                        if not os.listdir(dir_path):  # 如果文件夹为空
+                        if not os.listdir(dir_path):  # 如果目录为空
                             try:
                                 os.rmdir(dir_path)
-                                logger.info(f"成功删除小文件夹：{dir_path}")
+                                logger.info(f"成功删除小目录：{dir_path}")
                             except Exception as e:
-                                logger.error(f"删除小文件夹 {dir_path} 失败：{e}")
+                                logger.error(f"删除小目录 {dir_path} 失败：{e}")
                         else:
-                            logger.info(f"小文件夹 {dir_path} 不是空的，跳过删除。")
+                            logger.info(f"小目录 {dir_path} 不是空的，跳过删除。")
 
     def delete_empty_dirs(self):
-        if not self._delete_empty_dirs:  # 检查是否启用空文件夹删除功能
-            logger.info(f"空文件夹删除功能状态: {self._delete_empty_dirs}")
-            logger.info("空文件夹删除功能未启用，跳过删除操作")
+        if not self._delete_empty_dirs:  # 检查是否启用空目录删除功能
+            logger.info(f"空目录删除功能状态: {self._delete_empty_dirs}")
+            logger.info("空目录删除功能未启用，跳过删除操作")
 
-        logger.info("开始删除空文件夹 ...")
+        logger.info("开始删除空目录 ...")
         for mon_path in self._dirconf.keys():
             for root, dirs, _ in os.walk(mon_path, topdown=False):
                 for dir_name in dirs:
@@ -202,16 +202,16 @@ class FileDelete(_PluginBase):
                     if not os.listdir(dir_path):
                         try:
                             os.rmdir(dir_path)
-                            logger.info(f"成功删除空文件夹：{dir_path}")
+                            logger.info(f"成功删除空目录：{dir_path}")
                         except Exception as e:
-                            logger.error(f"删除空文件夹 {dir_path} 失败：{e}")
+                            logger.error(f"删除空目录 {dir_path} 失败：{e}")
 
     def delete_english_dirs(self):
-        if not self._delete_english_dirs:  # 检查是否启用英文文件夹删除功能
-            logger.info(f"英文文件夹删除功能状态: {self._delete_english_dirs}")
-            logger.info("英文文件夹删除功能未启用，跳过删除操作")
+        if not self._delete_english_dirs:  # 检查是否启用英文目录删除功能
+            logger.info(f"英文目录删除功能状态: {self._delete_english_dirs}")
+            logger.info("英文目录删除功能未启用，跳过删除操作")
 
-        logger.info("开始删除英文文件夹 ...")
+        logger.info("开始删除英文目录 ...")
         for mon_path in self._dirconf.keys():
             for root, dirs, _ in os.walk(mon_path):
                 for dir_name in dirs:
@@ -219,9 +219,9 @@ class FileDelete(_PluginBase):
                         dir_path = os.path.join(root, dir_name)
                         try:
                             os.rmdir(dir_path)
-                            logger.info(f"成功删除英文文件夹：{dir_path}")
+                            logger.info(f"成功删除英文目录：{dir_path}")
                         except Exception as e:
-                            logger.error(f"删除英文文件夹 {dir_path} 失败：{e}")
+                            logger.error(f"删除英文目录 {dir_path} 失败：{e}")
 
 
 
@@ -295,8 +295,8 @@ class FileDelete(_PluginBase):
                                         'component': 'VSwitch',
                                         'props': {
                                             'model': 'delete_empty_dirs',
-                                            'label': '删除空文件夹',
-                                            'disabled': self._delete_small_dirs  # 根据小文件夹状态禁用
+                                            'label': '删除空目录',
+                                            'disabled': self._delete_small_dirs  # 根据小目录状态禁用
                                         }
                                     }
                                 ]
@@ -312,8 +312,8 @@ class FileDelete(_PluginBase):
                                         'component': 'VSwitch',
                                         'props': {
                                             'model': 'delete_english_dirs',
-                                            'label': '删除英文文件夹',
-                                            'disabled': self._delete_small_dirs or self._delete_files_enabled   # 根据小文件夹状态禁用
+                                            'label': '删除英文目录',
+                                            'disabled': self._delete_small_dirs or self._delete_files_enabled   # 根据小目录状态禁用
                                         }
                                     }
                                 ]
@@ -350,8 +350,8 @@ class FileDelete(_PluginBase):
                                         'component': 'VSwitch',
                                         'props': {
                                             'model': 'delete_small_dirs',
-                                            'label': '启用删除小文件夹',
-                                            'disabled': self._delete_empty_dirs or self._delete_english_dirs or self._delete_files_enabled  # 根据空和英文文件夹状态禁用
+                                            'label': '启用删除目录',
+                                            'disabled': self._delete_empty_dirs or self._delete_english_dirs or self._delete_files_enabled  # 根据空和英文目录状态禁用
                                         }
                                     }
                                 ]
@@ -367,8 +367,8 @@ class FileDelete(_PluginBase):
                                         'component': 'VTextField',
                                         'props': {
                                             'model': 'small_dir_size_threshold',
-                                            'label': '小文件夹大小阈值 (MB)',
-                                            'placeholder': '设置小于此值的文件夹将被删除'
+                                            'label': '删除多大目录 (MB)',
+                                            'placeholder': '设置小于此值的目录将被删除'
                                         }
                                     }
                                 ]
@@ -389,8 +389,8 @@ class FileDelete(_PluginBase):
                                         'component': 'VSwitch',
                                         'props': {
                                             'model': 'delete_files_enabled',
-                                            'label': '启用文件删除',
-                                            'disabled': self._delete_small_dirs or self._delete_english_dirs # 根据小文件夹状态禁用 
+                                            'label': '启用删除文件',
+                                            'disabled': self._delete_small_dirs or self._delete_english_dirs # 根据小目录状态禁用 
                                           }
                                     }
                                 ]
@@ -489,7 +489,28 @@ class FileDelete(_PluginBase):
                                         'props': {
                                             'type': 'info',
                                             'variant': 'tonal',
-                                            'text': '注意：开启功能的顺序：1.开始删除小文件夹。无需开启其他选项。2.开启空文件夹必须目录中没有任何文件，才会被执行，3.英文文件夹删除，全英文名的文件夹，包括里面的其他文件'
+                                            'text': '注意：开启功能的顺序：1.开启删除目录后。不能启用其他选项。2.删除空目录必须目录中没有任何文件，才会被执行，3.删除英文目录，将删除全英文名的目录，包括其他文件'
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        'component': 'VRow',
+                        'content': [
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12,
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VAlert',
+                                        'props': {
+                                            'type': 'info',
+                                            'variant': 'tonal',
+                                            'text': '使用方法：1.删除目录。只能独立开启。2.删除文件+删除空目录，3.删除空文件+删除英文目录'
                                         }
                                     }
                                 ]
