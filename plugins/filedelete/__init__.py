@@ -44,7 +44,6 @@ class FileDelete(_PluginBase):
             self._enabled = config.get("enabled")
             self._onlyonce = config.get("onlyonce")
             self._monitor_dirs = config.get("monitor_dirs") or ""
-            self._format = config.get("format") or ".nfo, .jpg"
             self._keywords = config.get("keywords") or ""
             self._delete_empty_dirs = config.get("delete_empty_dirs", False)
             self._delete_english_dirs = config.get("delete_english_dirs", False)
@@ -68,11 +67,6 @@ class FileDelete(_PluginBase):
             for mon_path in monitor_dirs:
                 self._dirconf[mon_path] = None
 
-                if self._enabled:
-                    self._scheduler.add_job(func=self.delete_files, trigger='interval', 
-                                            seconds=60,  
-                                            name=f"文件删除 {mon_path}")
-
             if self._onlyonce:
                 logger.info("文件删除服务启动，立即运行一次")
                 self._scheduler.add_job(name="文件删除", func=self.delete_files, trigger='date',
@@ -87,29 +81,29 @@ class FileDelete(_PluginBase):
                 self._scheduler.start()
                 
                 
-    def list_files(self, directory, keywords):
+    def list_files(self, directory):
         files_found = []
         try:
-            for keyword in keywords:
-                for file in directory.rglob(f"*{keyword}*"):  # 查找包含关键词的文件
+            all_files = list(directory.rglob("*"))  # 查找所有文件
+            exclude_keywords = [kw.strip() for kw in self._keywords.split(",") if kw.strip()]  # 排除的关键词
+            
+            for file in all_files:
+                if all(exclude_kw not in str(file) for exclude_kw in exclude_keywords):
                     files_found.append(file)
         except Exception as e:
             logger.error(f"查找文件时发生异常: {e}", exc_info=True)
-        
-        # 打印当前目录下所有文件
-        logger.info(f"在目录 {directory} 下找到的文件: {list(directory.glob('*'))}")
 
+        logger.info(f"在目录 {directory} 下找到的文件: {all_files}")
         return files_found
-
-
-
+                
+                
     def delete_files(self):
         if not self._delete_files_enabled:  # 检查文件删除开关
-            logger.info(f"文件删除功能状态更新为: {self._delete_files_enabled}")
             logger.info("文件删除功能未启用，跳过删除操作")
+            return
 
         logger.info("开始全量删除文件 ...")
-        keywords = [kw.strip() for kw in self._keywords.split(",") if kw.strip()]
+        exclude_keywords = [kw.strip() for kw in self._keywords.split(",") if kw.strip()]  # 排除的关键词
 
         for mon_path in self._dirconf.keys():
             logger.info(f"当前监控路径: {mon_path}")
@@ -119,8 +113,8 @@ class FileDelete(_PluginBase):
                 continue
 
             try:
-                logger.info(f"准备在路径 {mon_path} 中查找关键词 {keywords}")
-                files = self.list_files(Path(mon_path), keywords)
+                logger.info(f"准备在路径 {mon_path} 中查找文件 ...")
+                files = self.list_files(Path(mon_path))  # 查找所有文件
             except Exception as e:
                 logger.error(f"调用 list_files 方法时发生异常: {e}", exc_info=True)
                 continue
@@ -131,15 +125,15 @@ class FileDelete(_PluginBase):
 
             for file in files:
                 if file.is_file():  # 确保只删除文件
+                    if any(exclude_kw in str(file) for exclude_kw in exclude_keywords):
+                        logger.info(f"文件 {file} 被排除，跳过删除。")
+                        continue
                     logger.info(f"找到文件：{file}")
                     try:
                         os.remove(file)  # 删除文件
                         logger.info(f"成功删除文件: {file}")
                     except Exception as e:
                         logger.error(f"删除文件 {file} 失败：{e}")
-
-
-
 
         # 记录是否有删除操作执行
         any_delete_operation = False
@@ -238,7 +232,6 @@ class FileDelete(_PluginBase):
             "enabled": self._enabled,
             "onlyonce": self._onlyonce,
             "monitor_dirs": self._monitor_dirs,
-            "format": self._format,
             "keywords": self._keywords,
             "delete_empty_dirs": self._delete_empty_dirs,
             "delete_english_dirs": self._delete_english_dirs,
@@ -320,7 +313,7 @@ class FileDelete(_PluginBase):
                                         'props': {
                                             'model': 'delete_english_dirs',
                                             'label': '删除英文文件夹',
-                                            'disabled': self._delete_small_dirs  # 根据小文件夹状态禁用
+                                            'disabled': self._delete_small_dirs or self._delete_files_enabled   # 根据小文件夹状态禁用
                                         }
                                     }
                                 ]
@@ -358,7 +351,7 @@ class FileDelete(_PluginBase):
                                         'props': {
                                             'model': 'delete_small_dirs',
                                             'label': '启用删除小文件夹',
-                                            'disabled': self._delete_empty_dirs or self._delete_english_dirs  # 根据空和英文文件夹状态禁用
+                                            'disabled': self._delete_empty_dirs or self._delete_english_dirs or self._delete_files_enabled  # 根据空和英文文件夹状态禁用
                                         }
                                     }
                                 ]
@@ -385,6 +378,23 @@ class FileDelete(_PluginBase):
                     {
                         'component': 'VRow',
                         'content': [
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12,
+                                    'md': 4
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VSwitch',
+                                        'props': {
+                                            'model': 'delete_files_enabled',
+                                            'label': '启用文件删除',
+                                            'disabled': self._delete_small_dirs or self._delete_english_dirs # 根据小文件夹状态禁用 
+                                          }
+                                    }
+                                ]
+                            },
                             {
                                 'component': 'VCol',
                                 'props': {
@@ -455,30 +465,8 @@ class FileDelete(_PluginBase):
                                     {
                                         'component': 'VTextarea',
                                         'props': {
-                                            'model': 'format',
-                                            'label': '文件格式',
-                                            'rows': 2,
-                                            'placeholder': ".nfo,.jpg,.mp4,.mkv,.png,.jpg,.pdf,.docx"
-                                        }
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        'component': 'VRow',
-                        'content': [
-                            {
-                                'component': 'VCol',
-                                'props': {
-                                    'cols': 12
-                                },
-                                'content': [
-                                    {
-                                        'component': 'VTextarea',
-                                        'props': {
                                             'model': 'keywords',
-                                            'label': '删除关键词',
+                                            'label': '排除关键词',
                                             'rows': 2,
                                             'placeholder': "关键词1,关键词2"
                                         }
@@ -487,26 +475,6 @@ class FileDelete(_PluginBase):
                             }
                         ]
                     },
-                    {
-                        'component': 'VRow',
-                        'content': [
-                            {
-                                'component': 'VCol',
-                                'props': {
-                                    'cols': 12,
-                                },
-                                'content': [
-                                    {
-                                        'component': 'VSwitch',
-                                        'props': {
-                                            'model': 'delete_files_enabled',
-                                            'label': '启用文件删除',
-                                          }
-                                    }
-                                ]
-                            }
-                        ]
-                    },                
                     {
                         'component': 'VRow',
                         'content': [
@@ -536,7 +504,6 @@ class FileDelete(_PluginBase):
             "monitor_dirs": "",
             "cron": "",
             "delay": "20,1-10",
-            "format": ".nfo,.jpg,.mp4,.mkv,.png, .jpg,.pdf,.docx",
             "keywords": "",
             "delete_files_enabled": True  # 添加这一行
         }
