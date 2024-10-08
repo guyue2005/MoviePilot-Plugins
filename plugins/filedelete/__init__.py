@@ -59,6 +59,7 @@ class FileDelete(_PluginBase):
             self._delete_small_dirs = config.get("delete_small_dirs", False)
             self._small_dir_size_threshold = int(config.get("small_dir_size_threshold", 10))
             self._delete_files_enabled = config.get("delete_files_enabled", False)  # 默认关闭
+            self._cron = config.get("cron", "")  # 添加 cron 设置
 
             logger.info(f"插件初始化状态: 启用={self._enabled}, 仅运行一次={self._onlyonce}, "
                         f"删除空目录={self._delete_empty_dirs}, 删除英文目录={self._delete_english_dirs}, "
@@ -202,31 +203,27 @@ class FileDelete(_PluginBase):
 
         for mon_path in self._dirconf.keys():
             for root, dirs, _ in os.walk(mon_path, topdown=False):
-                if not dirs:
-                    logger.info(f"路径 {root} 没有子目录，跳过。")
-                    continue
-
                 for dir_name in dirs:
                     dir_path = os.path.join(root, dir_name)
                     dir_size = sum(os.path.getsize(os.path.join(dir_path, f)) for f in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, f)))
 
                     if dir_size < size_threshold:
-                        if not os.listdir(dir_path):
-                            try:
-                                os.rmdir(dir_path)
-                                deleted_dirs.append(dir_path)
-                                logger.info(f"成功删除目录：{dir_path}，小于设定容量：{self._small_dir_size_threshold} MB")
-                            except Exception as e:
-                                logger.error(f"删除目录 {dir_path} 失败：{e}")
+                        try:
+                            os.rmdir(dir_path)
+                            deleted_dirs.append(dir_path)
+                            logger.info(f"成功删除目录：{dir_path}，小于设定容量：{self._small_dir_size_threshold} MB")
+                        except Exception as e:
+                            logger.error(f"删除目录 {dir_path} 失败：{e}")
 
         if deleted_dirs:
-            logger.info(f"删除全部目录操作完成，共删除了 {len(deleted_dirs)} 个小于 {self._small_dir_size_threshold} MB 的目录。")
+            logger.info(f"小目录删除操作完成，共删除了 {len(deleted_dirs)} 个小于 {self._small_dir_size_threshold} MB 的目录。")
         else:
-            logger.info("未找到小于设定容量的目录，跳过操作。")
+            logger.info("未找到小于{self._small_dir_size_threshold} MB的目录，跳过操作。")
+
 
         
     def __update_config(self):
-        self.update_config({
+        config_update = {
             "enabled": self._enabled,
             "onlyonce": self._onlyonce,
             "monitor_dirs": self._monitor_dirs,
@@ -236,9 +233,15 @@ class FileDelete(_PluginBase):
             "delete_small_dirs": self._delete_small_dirs,
             "small_dir_size_threshold": self._small_dir_size_threshold,
             "delete_files_enabled": self._delete_files_enabled
-        })
+        }
+        
 
+        # 只在 cron 不为空时更新
+        if self._cron:  # 假设你有一个变量 _cron 来存储 cron 表达式
+            config_update["cron"] = self._cron
 
+        self.update_config(config_update)
+    
     def get_state(self) -> bool:
         return self._enabled
 
