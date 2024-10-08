@@ -62,7 +62,7 @@ class FileDelete(_PluginBase):
 
             logger.info(f"插件初始化状态: 启用={self._enabled}, 仅运行一次={self._onlyonce}, "
                         f"删除空目录={self._delete_empty_dirs}, 删除英文目录={self._delete_english_dirs}, "
-                        f"删除全部目录={self._delete_small_dirs}, 删除文件功能={self._delete_files_enabled}")
+                        f"删除全部目录={self._delete_small_dirs}, 删除文件={self._delete_files_enabled}")
 
         self.stop_service()
 
@@ -95,29 +95,30 @@ class FileDelete(_PluginBase):
         if self._delete_files_enabled:
             self.delete_files()
         else:
-            logger.info("文件删除功能未启用，跳过删除文件操作")
+            logger.info("文件删除未启用，跳过操作")
 
     def delete_empty_dirs_if_enabled(self):
         if self._delete_empty_dirs:
             self.delete_empty_dirs()
         else:
-            logger.info("空目录删除功能未启用，跳过删除空目录操作")
+            logger.info("删除空目录未启用，跳过操作")
 
     def delete_english_dirs_if_enabled(self):
         if self._delete_english_dirs:
             self.delete_english_dirs()
         else:
-            logger.info("英文目录删除功能未启用，跳过删除英文目录操作")
+            logger.info("删除英文目录未启用，跳过操作")
 
     def delete_small_dirs_if_enabled(self):
         if self._delete_small_dirs:
             self.delete_small_dirs()
         else:
-            logger.info("全部目录删除功能未启用，跳过删除全部目录操作")
+            logger.info("删除全部目录未启用，跳过操作")
 
     def delete_files(self):
         logger.info("开始全量删除文件 ...")
         exclude_keywords = [kw.strip() for kw in self._keywords.split(",") if kw.strip()]
+        deleted_files_count = 0  # 计数已删除文件
 
         for mon_path in self._dirconf.keys():
             logger.info(f"当前监控路径: {mon_path}")
@@ -146,53 +147,83 @@ class FileDelete(_PluginBase):
                     try:
                         os.remove(file)
                         logger.info(f"成功删除文件: {file}")
+                        deleted_files_count += 1
                     except Exception as e:
                         logger.error(f"删除文件 {file} 失败：{e}")
 
+        logger.info(f"文件删除操作完成，共删除了 {deleted_files_count} 个文件。")
+
     def delete_empty_dirs(self):
         logger.info("开始删除空目录 ...")
+        deleted_dirs = []
         for mon_path in self._dirconf.keys():
             for root, dirs, _ in os.walk(mon_path, topdown=False):
+                if not dirs:
+                    logger.info(f"路径 {root} 没有子目录，跳过。")
+                    continue
+                
                 for dir_name in dirs:
                     dir_path = os.path.join(root, dir_name)
                     if not os.listdir(dir_path):
                         try:
                             os.rmdir(dir_path)
+                            deleted_dirs.append(dir_path)
                             logger.info(f"成功删除空目录：{dir_path}")
                         except Exception as e:
                             logger.error(f"删除空目录 {dir_path} 失败：{e}")
+        
+        logger.info(f"删除空目录操作完成，共删除了 {len(deleted_dirs)} 个目录。")
 
     def delete_english_dirs(self):
         logger.info("开始删除英文目录 ...")
+        deleted_dirs = []
         for mon_path in self._dirconf.keys():
             for root, dirs, _ in os.walk(mon_path):
+                if not dirs:
+                    logger.info(f"路径 {root} 没有子目录，跳过。")
+                    continue
+                
                 for dir_name in dirs:
                     if all(c.isalnum() or c in ['.', '_', '-'] for c in dir_name):
                         dir_path = os.path.join(root, dir_name)
                         try:
                             os.rmdir(dir_path)
+                            deleted_dirs.append(dir_path)
                             logger.info(f"成功删除英文目录：{dir_path}")
                         except Exception as e:
                             logger.error(f"删除英文目录 {dir_path} 失败：{e}")
+        
+        logger.info(f"删除英文目录操作完成，共删除了 {len(deleted_dirs)} 个目录。")
 
     def delete_small_dirs(self):
         logger.info("开始删除全部目录 ...")
+        deleted_dirs = []
         size_threshold = int(self._small_dir_size_threshold) * 1024 * 1024
+
         for mon_path in self._dirconf.keys():
             for root, dirs, _ in os.walk(mon_path, topdown=False):
+                if not dirs:
+                    logger.info(f"路径 {root} 没有子目录，跳过。")
+                    continue
+
                 for dir_name in dirs:
                     dir_path = os.path.join(root, dir_name)
                     dir_size = sum(os.path.getsize(os.path.join(dir_path, f)) for f in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, f)))
-                    
+
                     if dir_size < size_threshold:
                         if not os.listdir(dir_path):
                             try:
                                 os.rmdir(dir_path)
-                                logger.info(f"成功删除目录：{dir_path}")
+                                deleted_dirs.append(dir_path)
+                                logger.info(f"成功删除目录：{dir_path}，小于设定容量：{self._small_dir_size_threshold} MB")
                             except Exception as e:
                                 logger.error(f"删除目录 {dir_path} 失败：{e}")
 
-        
+        if deleted_dirs:
+            logger.info(f"删除全部目录操作完成，共删除了 {len(deleted_dirs)} 个小于 {self._small_dir_size_threshold} MB 的目录。")
+        else:
+            logger.info("未找到小于设定容量的目录，跳过操作。")
+
         
     def __update_config(self):
         self.update_config({
@@ -207,17 +238,6 @@ class FileDelete(_PluginBase):
             "delete_files_enabled": self._delete_files_enabled
         })
 
-        # 记录当前启用的功能和选项
-        enabled_features = [
-            "文件删除" if self._delete_files_enabled else None,
-            "空目录删除" if self._delete_empty_dirs else None,
-            "英文目录删除" if self._delete_english_dirs else None,
-            "全部目录删除" if self._delete_small_dirs else None,
-        ]
-        enabled_features = [feature for feature in enabled_features if feature is not None]
-
-        logger.info(f"开启的功能: {', '.join(enabled_features) if enabled_features else '无'}")
-        logger.info(f"定时删除周期: {self._monitor_dirs}, 随机延时: {self._delay}")
 
     def get_state(self) -> bool:
         return self._enabled
