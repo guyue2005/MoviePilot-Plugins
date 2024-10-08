@@ -37,33 +37,39 @@ class FileDelete(_PluginBase):
     _keywords = None
     _delete_files_enabled = True  # 默认为启用文件删除
     
+    
+    def __init__(self):
+        super().__init__()
+        self._delete_empty_dirs = False
+        self._delete_english_dirs = False
+        self._delete_small_dirs = False
+        self._small_dir_size_threshold = 10
+    
 
     def init_plugin(self, config: dict = None):
         self._dirconf = {}
-
+        
         if config:
-            self._enabled = config.get("enabled")
-            self._onlyonce = config.get("onlyonce")
-            self._monitor_dirs = config.get("monitor_dirs") or ""
-            self._keywords = config.get("keywords") or ""
+            self._enabled = config.get("enabled", False)
+            self._onlyonce = config.get("onlyonce", False)
+            self._monitor_dirs = config.get("monitor_dirs", "")
+            self._keywords = config.get("keywords", "")
             self._delete_empty_dirs = config.get("delete_empty_dirs", False)
             self._delete_english_dirs = config.get("delete_english_dirs", False)
             self._delete_small_dirs = config.get("delete_small_dirs", False)
             self._small_dir_size_threshold = int(config.get("small_dir_size_threshold", 10))
-            self._delete_files_enabled = config.get("delete_files_enabled", True)  # 读取文件删除开关
-            
-         
-        
+            self._delete_files_enabled = config.get("delete_files_enabled", False)  # 默认关闭
+
         logger.info(f"插件初始化状态: enabled={self._enabled}, onlyonce={self._onlyonce}, "
-                        f"delete_empty_dirs={self._delete_empty_dirs}, delete_english_dirs={self._delete_english_dirs}, "
-                        f"delete_small_dirs={self._delete_small_dirs}, delete_files_enabled={self._delete_files_enabled}")     
-                        
+                    f"delete_empty_dirs={self._delete_empty_dirs}, delete_english_dirs={self._delete_english_dirs}, "
+                    f"delete_small_dirs={self._delete_small_dirs}, delete_files_enabled={self._delete_files_enabled}")
+
         self.stop_service()
 
         if self._enabled or self._onlyonce:
             self._scheduler = BackgroundScheduler(timezone=settings.TZ)
             monitor_dirs = [line.strip() for line in self._monitor_dirs.splitlines() if line.strip()]
-            
+
             logger.info(f"监控目录: {monitor_dirs}")
 
             if not monitor_dirs:
@@ -73,41 +79,45 @@ class FileDelete(_PluginBase):
 
             if self._onlyonce:
                 logger.info("文件删除服务启动，立即运行一次")
-                self._scheduler.add_job(name="文件删除", func=self.delete_files, trigger='date',
-                                        run_date=datetime.datetime.now(
-                                            tz=pytz.timezone(settings.TZ)) + datetime.timedelta(seconds=3)
-                                        )
+                # 只调用启用的功能
+                self.delete_files_if_enabled()
+                self.delete_empty_dirs_if_enabled()
+                self.delete_english_dirs_if_enabled()
+                self.delete_small_dirs_if_enabled()
                 self._onlyonce = False
                 self.__update_config()
 
             if self._scheduler.get_jobs():
                 self._scheduler.print_jobs()
                 self._scheduler.start()
-                
-                
-    def list_files(self, directory):
-        files_found = []
-        try:
-            all_files = list(directory.rglob("*"))  # 查找所有文件
-            exclude_keywords = [kw.strip() for kw in self._keywords.split(",") if kw.strip()]  # 排除的关键词
-            
-            for file in all_files:
-                if all(exclude_kw not in str(file) for exclude_kw in exclude_keywords):
-                    files_found.append(file)
-        except Exception as e:
-            logger.error(f"查找文件时发生异常: {e}", exc_info=True)
 
-        logger.info(f"在目录 {directory} 下找到的文件: {all_files}")
-        return files_found
-                
-                
+    def delete_files_if_enabled(self):
+        if self._delete_files_enabled:
+            self.delete_files()
+        else:
+            logger.info("文件删除功能未启用，跳过删除文件操作")
+
+    def delete_empty_dirs_if_enabled(self):
+        if self._delete_empty_dirs:
+            self.delete_empty_dirs()
+        else:
+            logger.info("空目录删除功能未启用，跳过删除空目录操作")
+
+    def delete_english_dirs_if_enabled(self):
+        if self._delete_english_dirs:
+            self.delete_english_dirs()
+        else:
+            logger.info("英文目录删除功能未启用，跳过删除英文目录操作")
+
+    def delete_small_dirs_if_enabled(self):
+        if self._delete_small_dirs:
+            self.delete_small_dirs()
+        else:
+            logger.info("小目录删除功能未启用，跳过删除小目录操作")
+
     def delete_files(self):
-        if not self._delete_files_enabled:  # 检查文件删除开关
-            logger.info("文件删除功能未启用，跳过删除操作")
-            return
-
         logger.info("开始全量删除文件 ...")
-        exclude_keywords = [kw.strip() for kw in self._keywords.split(",") if kw.strip()]  # 排除的关键词
+        exclude_keywords = [kw.strip() for kw in self._keywords.split(",") if kw.strip()]
 
         for mon_path in self._dirconf.keys():
             logger.info(f"当前监控路径: {mon_path}")
@@ -118,7 +128,7 @@ class FileDelete(_PluginBase):
 
             try:
                 logger.info(f"准备在路径 {mon_path} 中查找文件 ...")
-                files = self.list_files(Path(mon_path))  # 查找所有文件
+                files = self.list_files(Path(mon_path))
             except Exception as e:
                 logger.error(f"调用 list_files 方法时发生异常: {e}", exc_info=True)
                 continue
@@ -128,76 +138,18 @@ class FileDelete(_PluginBase):
                 continue
 
             for file in files:
-                if file.is_file():  # 确保只删除文件
+                if file.is_file():
                     if any(exclude_kw in str(file) for exclude_kw in exclude_keywords):
                         logger.info(f"文件 {file} 被排除，跳过删除。")
                         continue
                     logger.info(f"找到文件：{file}")
                     try:
-                        os.remove(file)  # 删除文件
+                        os.remove(file)
                         logger.info(f"成功删除文件: {file}")
                     except Exception as e:
                         logger.error(f"删除文件 {file} 失败：{e}")
 
-        # 记录是否有删除操作执行
-        any_delete_operation = False
-
-        if self._delete_small_dirs:
-            logger.info("准备删除目录 ...")
-            self.delete_small_dirs()
-            any_delete_operation = True
-
-        if self._delete_empty_dirs:
-            logger.info("准备删除空目录 ...")
-            self.delete_empty_dirs()
-            any_delete_operation = True
-
-        if self._delete_english_dirs:
-            logger.info("准备删除英文目录 ...")
-            self.delete_english_dirs()
-            any_delete_operation = True
-
-        if any_delete_operation:
-            logger.info("至少有一个删除操作被执行。")
-        else:
-            logger.info("没有删除操作被执行。")
-
-
-    def delete_small_dirs(self):
-        if not self._delete_small_dirs:  # 检查目录删除功能是否启用
-            logger.info(f"目录删除功能状态: {self._delete_small_dirs}")
-            logger.info("目录删除功能未启用，跳过删除操作")
-
-        logger.info("开始删除目录 ...")
-        size_threshold = int(self._small_dir_size_threshold) * 1024 * 1024
-        for mon_path in self._dirconf.keys():
-            for root, dirs, _ in os.walk(mon_path, topdown=False):
-                for dir_name in dirs:
-                    dir_path = os.path.join(root, dir_name)
-                    dir_size = 0
-                    try:
-                        dir_size = sum(os.path.getsize(os.path.join(dir_path, f)) for f in os.listdir(dir_path)
-                                       if os.path.isfile(os.path.join(dir_path, f)))
-                    except Exception as e:
-                        logger.error(f"计算目录大小失败 {dir_path}：{e}")
-                        continue
-
-                    logger.info(f"目录 {dir_path} 的大小为 {dir_size} 字节")
-                    if dir_size < size_threshold:  # 确保dir_size是int
-                        if not os.listdir(dir_path):  # 如果目录为空
-                            try:
-                                os.rmdir(dir_path)
-                                logger.info(f"成功删除目录：{dir_path}")
-                            except Exception as e:
-                                logger.error(f"删除目录 {dir_path} 失败：{e}")
-                        else:
-                            logger.info(f"目录 {dir_path} 不是空的，跳过删除。")
-
     def delete_empty_dirs(self):
-        if not self._delete_empty_dirs:  # 检查是否启用空目录删除功能
-            logger.info(f"空目录删除功能状态: {self._delete_empty_dirs}")
-            logger.info("空目录删除功能未启用，跳过删除操作")
-
         logger.info("开始删除空目录 ...")
         for mon_path in self._dirconf.keys():
             for root, dirs, _ in os.walk(mon_path, topdown=False):
@@ -211,10 +163,6 @@ class FileDelete(_PluginBase):
                             logger.error(f"删除空目录 {dir_path} 失败：{e}")
 
     def delete_english_dirs(self):
-        if not self._delete_english_dirs:  # 检查是否启用英文目录删除功能
-            logger.info(f"英文目录删除功能状态: {self._delete_english_dirs}")
-            logger.info("英文目录删除功能未启用，跳过删除操作")
-
         logger.info("开始删除英文目录 ...")
         for mon_path in self._dirconf.keys():
             for root, dirs, _ in os.walk(mon_path):
@@ -227,7 +175,22 @@ class FileDelete(_PluginBase):
                         except Exception as e:
                             logger.error(f"删除英文目录 {dir_path} 失败：{e}")
 
-
+    def delete_small_dirs(self):
+        logger.info("开始删除小目录 ...")
+        size_threshold = int(self._small_dir_size_threshold) * 1024 * 1024
+        for mon_path in self._dirconf.keys():
+            for root, dirs, _ in os.walk(mon_path, topdown=False):
+                for dir_name in dirs:
+                    dir_path = os.path.join(root, dir_name)
+                    dir_size = sum(os.path.getsize(os.path.join(dir_path, f)) for f in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, f)))
+                    
+                    if dir_size < size_threshold:
+                        if not os.listdir(dir_path):
+                            try:
+                                os.rmdir(dir_path)
+                                logger.info(f"成功删除目录：{dir_path}")
+                            except Exception as e:
+                                logger.error(f"删除目录 {dir_path} 失败：{e}")
 
         
         
@@ -394,7 +357,7 @@ class FileDelete(_PluginBase):
                                         'props': {
                                             'model': 'delete_files_enabled',
                                             'label': '启用删除文件',
-                                            'disabled': self._delete_small_dirs or self._delete_english_dirs # 根据小目录状态禁用 
+                                            'disabled': self._delete_small_dirs # 根据小目录状态禁用 
                                           }
                                     }
                                 ]
@@ -493,7 +456,7 @@ class FileDelete(_PluginBase):
                                         'props': {
                                             'type': 'info',
                                             'variant': 'tonal',
-                                            'text': '注意：开启功能的顺序：1.开启删除目录后。不能启用其他选项。2.删除空目录必须目录中没有任何文件，才会被执行，3.删除英文目录，将删除全英文名的目录，包括其他文件'
+                                            'text': '注意：开启功能的顺序：1.开启删除目录后。不能启用其他选项。2.删除空目录必须目录中没有任何文件，才会被执行，3.可以删除文件，在开启空目录和英文目录'
                                         }
                                     }
                                 ]
@@ -530,7 +493,7 @@ class FileDelete(_PluginBase):
             "cron": "",
             "delay": "20,1-10",
             "keywords": "",
-            "delete_files_enabled": True  # 添加这一行
+            "delete_files_enabled": False  # 添加这一行
         }
 
     def get_page(self) -> List[dict]:
