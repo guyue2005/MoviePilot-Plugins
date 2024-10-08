@@ -216,9 +216,9 @@ class FileDelete(_PluginBase):
                             logger.error(f"删除目录 {dir_path} 失败：{e}")
 
         if deleted_dirs:
-            logger.info(f"小目录删除操作完成，共删除了 {len(deleted_dirs)} 个小于 {self._small_dir_size_threshold} MB 的目录。")
+            logger.info(f"全部目录删除操作完成，共删除了 {len(deleted_dirs)} 个小于 {self._small_dir_size_threshold} MB 的目录。")
         else:
-            logger.info("未找到小于{self._small_dir_size_threshold} MB的目录，跳过操作。")
+            logger.info(f"未找到小于 {self._small_dir_size_threshold} MB的目录，跳过操作。")
 
 
         
