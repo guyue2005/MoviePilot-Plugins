@@ -60,9 +60,9 @@ class FileDelete(_PluginBase):
             self._small_dir_size_threshold = int(config.get("small_dir_size_threshold", 10))
             self._delete_files_enabled = config.get("delete_files_enabled", False)  # 默认关闭
 
-        logger.info(f"插件初始化状态: enabled={self._enabled}, onlyonce={self._onlyonce}, "
-                    f"delete_empty_dirs={self._delete_empty_dirs}, delete_english_dirs={self._delete_english_dirs}, "
-                    f"delete_small_dirs={self._delete_small_dirs}, delete_files_enabled={self._delete_files_enabled}")
+            logger.info(f"插件初始化状态: 启用={self._enabled}, 仅运行一次={self._onlyonce}, "
+                        f"删除空目录={self._delete_empty_dirs}, 删除英文目录={self._delete_english_dirs}, "
+                        f"删除全部目录={self._delete_small_dirs}, 删除文件功能={self._delete_files_enabled}")
 
         self.stop_service()
 
@@ -113,7 +113,7 @@ class FileDelete(_PluginBase):
         if self._delete_small_dirs:
             self.delete_small_dirs()
         else:
-            logger.info("小目录删除功能未启用，跳过删除小目录操作")
+            logger.info("全部目录删除功能未启用，跳过删除全部目录操作")
 
     def delete_files(self):
         logger.info("开始全量删除文件 ...")
@@ -176,7 +176,7 @@ class FileDelete(_PluginBase):
                             logger.error(f"删除英文目录 {dir_path} 失败：{e}")
 
     def delete_small_dirs(self):
-        logger.info("开始删除小目录 ...")
+        logger.info("开始删除全部目录 ...")
         size_threshold = int(self._small_dir_size_threshold) * 1024 * 1024
         for mon_path in self._dirconf.keys():
             for root, dirs, _ in os.walk(mon_path, topdown=False):
@@ -204,8 +204,20 @@ class FileDelete(_PluginBase):
             "delete_english_dirs": self._delete_english_dirs,
             "delete_small_dirs": self._delete_small_dirs,
             "small_dir_size_threshold": self._small_dir_size_threshold,
-            "delete_files_enabled": self._delete_files_enabled  # 更新文件删除开关状态
+            "delete_files_enabled": self._delete_files_enabled
         })
+
+        # 记录当前启用的功能和选项
+        enabled_features = [
+            "文件删除" if self._delete_files_enabled else None,
+            "空目录删除" if self._delete_empty_dirs else None,
+            "英文目录删除" if self._delete_english_dirs else None,
+            "全部目录删除" if self._delete_small_dirs else None,
+        ]
+        enabled_features = [feature for feature in enabled_features if feature is not None]
+
+        logger.info(f"开启的功能: {', '.join(enabled_features) if enabled_features else '无'}")
+        logger.info(f"定时删除周期: {self._monitor_dirs}, 随机延时: {self._delay}")
 
     def get_state(self) -> bool:
         return self._enabled
@@ -263,7 +275,7 @@ class FileDelete(_PluginBase):
                                         'props': {
                                             'model': 'delete_empty_dirs',
                                             'label': '删除空目录',
-                                            'disabled': self._delete_small_dirs  # 根据小目录状态禁用
+                                            'disabled': self._delete_small_dirs  # 根据全部目录状态禁用
                                         }
                                     }
                                 ]
@@ -280,7 +292,7 @@ class FileDelete(_PluginBase):
                                         'props': {
                                             'model': 'delete_english_dirs',
                                             'label': '删除英文目录',
-                                            'disabled': self._delete_small_dirs  # 根据小目录状态禁用
+                                            'disabled': self._delete_small_dirs  # 根据全部目录状态禁用
                                         }
                                     }
                                 ]
@@ -317,7 +329,7 @@ class FileDelete(_PluginBase):
                                         'component': 'VSwitch',
                                         'props': {
                                             'model': 'delete_small_dirs',
-                                            'label': '启用删除目录',
+                                            'label': '启用删除全部目录',
                                             'disabled': self._delete_empty_dirs or self._delete_english_dirs or self._delete_files_enabled  # 根据空和英文目录状态禁用
                                         }
                                     }
@@ -357,7 +369,7 @@ class FileDelete(_PluginBase):
                                         'props': {
                                             'model': 'delete_files_enabled',
                                             'label': '启用删除文件',
-                                            'disabled': self._delete_small_dirs # 根据小目录状态禁用 
+                                            'disabled': self._delete_small_dirs # 根据全部目录状态禁用 
                                           }
                                     }
                                 ]
