@@ -41,11 +41,11 @@ class FileDelete(_PluginBase):
     def __init__(self):
         super().__init__()
         self._delete_empty_dirs = False
-        self._delete_english_dirs = False
         self._delete_small_dirs = False
         self._small_dir_size_threshold = 10
     
 
+    
     def init_plugin(self, config: dict = None):
         self._dirconf = {}
         
@@ -55,15 +55,14 @@ class FileDelete(_PluginBase):
             self._monitor_dirs = config.get("monitor_dirs", "")
             self._keywords = config.get("keywords", "")
             self._delete_empty_dirs = config.get("delete_empty_dirs", False)
-            self._delete_english_dirs = config.get("delete_english_dirs", False)
             self._delete_small_dirs = config.get("delete_small_dirs", False)
             self._small_dir_size_threshold = int(config.get("small_dir_size_threshold", 10))
             self._delete_files_enabled = config.get("delete_files_enabled", False)  # 默认关闭
-            self._cron = config.get("cron", "")  # 添加 cron 设置
+            self._cron = config.get('cron', '30 4 * * *')  # 添加 cron 设置
 
             logger.info(f"插件初始化状态: 启用={self._enabled}, 仅运行一次={self._onlyonce}, "
-                        f"删除空目录={self._delete_empty_dirs}, 删除英文目录={self._delete_english_dirs}, "
-                        f"删除全部目录={self._delete_small_dirs}, 删除文件={self._delete_files_enabled}")
+                        f"删除文件={self._delete_files_enabled}, 删除空目录={self._delete_empty_dirs}, "
+                        f"删除全部目录={self._delete_small_dirs} ")
 
         self.stop_service()
 
@@ -80,17 +79,40 @@ class FileDelete(_PluginBase):
 
             if self._onlyonce:
                 logger.info("文件删除服务启动，立即运行一次")
-                # 只调用启用的功能
                 self.delete_files_if_enabled()
                 self.delete_empty_dirs_if_enabled()
-                self.delete_english_dirs_if_enabled()
                 self.delete_small_dirs_if_enabled()
                 self._onlyonce = False
                 self.__update_config()
 
+            # 添加 cron 任务
+            if self._cron:
+                self._scheduler.add_job(
+                    self.run_enabled_deletion_methods, 
+                    trigger='cron', 
+                    id='file_delete_job', 
+                    **self._cron_kwargs()  # 使用关键字参数来传递其他设置
+                )
+                logger.info(f"已添加定时任务，cron 表达式: {self._cron}")
+
             if self._scheduler.get_jobs():
                 self._scheduler.print_jobs()
                 self._scheduler.start()
+
+    def _cron_kwargs(self):
+        cron_parts = self._cron.split()
+        return {
+            'minute': cron_parts[0],
+            'hour': cron_parts[1],
+            'day': cron_parts[2],
+            'month': cron_parts[3],
+            'day_of_week': cron_parts[4]
+        }
+
+    def run_enabled_deletion_methods(self):
+        self.delete_files_if_enabled()
+        self.delete_empty_dirs_if_enabled()
+        self.delete_small_dirs_if_enabled()
 
     def delete_files_if_enabled(self):
         if self._delete_files_enabled:
@@ -104,17 +126,14 @@ class FileDelete(_PluginBase):
         else:
             logger.info("删除空目录未启用，跳过操作")
 
-    def delete_english_dirs_if_enabled(self):
-        if self._delete_english_dirs:
-            self.delete_english_dirs()
-        else:
-            logger.info("删除英文目录未启用，跳过操作")
-
     def delete_small_dirs_if_enabled(self):
         if self._delete_small_dirs:
             self.delete_small_dirs()
         else:
             logger.info("删除全部目录未启用，跳过操作")
+     
+    def list_files(self, directory: Path) -> List[Path]:
+        return [file for file in directory.rglob('*') if file.is_file()] 
 
     def delete_files(self):
         logger.info("开始全量删除文件 ...")
@@ -144,6 +163,7 @@ class FileDelete(_PluginBase):
                     if any(exclude_kw in str(file) for exclude_kw in exclude_keywords):
                         logger.info(f"文件 {file} 被排除，跳过删除。")
                         continue
+                    
                     logger.info(f"找到文件：{file}")
                     try:
                         os.remove(file)
@@ -159,42 +179,18 @@ class FileDelete(_PluginBase):
         deleted_dirs = []
         for mon_path in self._dirconf.keys():
             for root, dirs, _ in os.walk(mon_path, topdown=False):
-                if not dirs:
-                    logger.info(f"路径 {root} 没有子目录，跳过。")
-                    continue
-                
                 for dir_name in dirs:
                     dir_path = os.path.join(root, dir_name)
-                    if not os.listdir(dir_path):
+                    # 检查目录是否为空（0字节）
+                    if os.path.isdir(dir_path) and not os.listdir(dir_path):
                         try:
                             os.rmdir(dir_path)
                             deleted_dirs.append(dir_path)
                             logger.info(f"成功删除空目录：{dir_path}")
                         except Exception as e:
                             logger.error(f"删除空目录 {dir_path} 失败：{e}")
-        
-        logger.info(f"删除空目录操作完成，共删除了 {len(deleted_dirs)} 个目录。")
 
-    def delete_english_dirs(self):
-        logger.info("开始删除英文目录 ...")
-        deleted_dirs = []
-        for mon_path in self._dirconf.keys():
-            for root, dirs, _ in os.walk(mon_path):
-                if not dirs:
-                    logger.info(f"路径 {root} 没有子目录，跳过。")
-                    continue
-                
-                for dir_name in dirs:
-                    if all(c.isalnum() or c in ['.', '_', '-'] for c in dir_name):
-                        dir_path = os.path.join(root, dir_name)
-                        try:
-                            os.rmdir(dir_path)
-                            deleted_dirs.append(dir_path)
-                            logger.info(f"成功删除英文目录：{dir_path}")
-                        except Exception as e:
-                            logger.error(f"删除英文目录 {dir_path} 失败：{e}")
-        
-        logger.info(f"删除英文目录操作完成，共删除了 {len(deleted_dirs)} 个目录。")
+        logger.info(f"删除空目录操作完成，共删除了 {len(deleted_dirs)} 个目录。")
 
     def delete_small_dirs(self):
         logger.info("开始删除全部目录 ...")
@@ -229,7 +225,6 @@ class FileDelete(_PluginBase):
             "monitor_dirs": self._monitor_dirs,
             "keywords": self._keywords,
             "delete_empty_dirs": self._delete_empty_dirs,
-            "delete_english_dirs": self._delete_english_dirs,
             "delete_small_dirs": self._delete_small_dirs,
             "small_dir_size_threshold": self._small_dir_size_threshold,
             "delete_files_enabled": self._delete_files_enabled
@@ -286,7 +281,7 @@ class FileDelete(_PluginBase):
                                     }
                                 ]
                             },
-                            {
+                                                        {
                                 'component': 'VCol',
                                 'props': {
                                     'cols': 12,
@@ -296,10 +291,10 @@ class FileDelete(_PluginBase):
                                     {
                                         'component': 'VSwitch',
                                         'props': {
-                                            'model': 'delete_empty_dirs',
-                                            'label': '删除空目录',
-                                            'disabled': self._delete_small_dirs  # 根据全部目录状态禁用
-                                        }
+                                            'model': 'delete_files_enabled',
+                                            'label': '启用删除文件',
+                                            'disabled': self._delete_small_dirs # 根据全部目录状态禁用 
+                                          }
                                     }
                                 ]
                             },
@@ -313,8 +308,8 @@ class FileDelete(_PluginBase):
                                     {
                                         'component': 'VSwitch',
                                         'props': {
-                                            'model': 'delete_english_dirs',
-                                            'label': '删除英文目录',
+                                            'model': 'delete_empty_dirs',
+                                            'label': '删除空目录',
                                             'disabled': self._delete_small_dirs  # 根据全部目录状态禁用
                                         }
                                     }
@@ -353,7 +348,7 @@ class FileDelete(_PluginBase):
                                         'props': {
                                             'model': 'delete_small_dirs',
                                             'label': '启用删除全部目录',
-                                            'disabled': self._delete_empty_dirs or self._delete_english_dirs or self._delete_files_enabled  # 根据空和英文目录状态禁用
+                                            'disabled': self._delete_empty_dirs or self._delete_files_enabled  # 根据空和英文目录状态禁用
                                         }
                                     }
                                 ]
@@ -380,23 +375,6 @@ class FileDelete(_PluginBase):
                     {
                         'component': 'VRow',
                         'content': [
-                            {
-                                'component': 'VCol',
-                                'props': {
-                                    'cols': 12,
-                                    'md': 4
-                                },
-                                'content': [
-                                    {
-                                        'component': 'VSwitch',
-                                        'props': {
-                                            'model': 'delete_files_enabled',
-                                            'label': '启用删除文件',
-                                            'disabled': self._delete_small_dirs # 根据全部目录状态禁用 
-                                          }
-                                    }
-                                ]
-                            },
                             {
                                 'component': 'VCol',
                                 'props': {
@@ -491,7 +469,7 @@ class FileDelete(_PluginBase):
                                         'props': {
                                             'type': 'info',
                                             'variant': 'tonal',
-                                            'text': '注意：开启功能的顺序：1.开启删除目录后。不能启用其他选项。2.删除空目录必须目录中没有任何文件，才会被执行，3.可以删除文件，在开启空目录和英文目录'
+                                            'text': '注意：开启功能的顺序：1.开启删除目录后。不能启用其他选项。2.删除空目录必须目录中没有任何文件，才会被执行，3.可以删除文件，在开启空目录'
                                         }
                                     }
                                 ]
