@@ -160,8 +160,9 @@ class FileDelete(_PluginBase):
 
             for file in files:
                 if file.is_file():
+                    # 在删除文件之前检查排除关键词
                     if any(exclude_kw in str(file) for exclude_kw in exclude_keywords):
-                        logger.info(f"文件 {file} 被排除，跳过删除。")
+                        logger.info(f"文件 {file} 包含排除关键词，跳过删除。")
                         continue
                     
                     logger.info(f"找到文件：{file}")
@@ -174,14 +175,23 @@ class FileDelete(_PluginBase):
 
         logger.info(f"文件删除操作完成，共删除了 {deleted_files_count} 个文件。")
 
+
     def delete_empty_dirs(self):
         logger.info("开始删除空目录 ...")
         deleted_dirs = []
+        exclude_keywords = [kw.strip() for kw in self._keywords.split(",") if kw.strip()]  # 添加排除关键词
+
         for mon_path in self._dirconf.keys():
             for root, dirs, _ in os.walk(mon_path, topdown=False):
                 for dir_name in dirs:
                     dir_path = os.path.join(root, dir_name)
-                    # 检查目录是否为空（0字节）
+
+                    # 检查目录是否包含排除关键词
+                    if any(exclude_kw in dir_path for exclude_kw in exclude_keywords):
+                        logger.info(f"目录 {dir_path} 包含排除关键词，跳过删除。")
+                        continue
+
+                    # 检查目录是否为空（没有子文件和子目录）
                     if os.path.isdir(dir_path) and not os.listdir(dir_path):
                         try:
                             os.rmdir(dir_path)
@@ -192,17 +202,27 @@ class FileDelete(_PluginBase):
 
         logger.info(f"删除空目录操作完成，共删除了 {len(deleted_dirs)} 个目录。")
 
+
     def delete_small_dirs(self):
-        logger.info("开始删除全部目录 ...")
+        logger.info("开始删除小于设定容量的目录 ...")
         deleted_dirs = []
         size_threshold = int(self._small_dir_size_threshold) * 1024 * 1024
+        exclude_keywords = [kw.strip() for kw in self._keywords.split(",") if kw.strip()]  # 添加排除关键词
 
         for mon_path in self._dirconf.keys():
             for root, dirs, _ in os.walk(mon_path, topdown=False):
                 for dir_name in dirs:
                     dir_path = os.path.join(root, dir_name)
+                    
+                    # 先检查目录是否包含排除关键词
+                    if any(exclude_kw in dir_path for exclude_kw in exclude_keywords):
+                        logger.info(f"目录 {dir_path} 包含排除关键词，跳过删除。")
+                        continue
+
+                    # 计算目录大小
                     dir_size = sum(os.path.getsize(os.path.join(dir_path, f)) for f in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, f)))
 
+                    # 检查是否小于设定的阈值
                     if dir_size < size_threshold:
                         try:
                             os.rmdir(dir_path)
