@@ -135,10 +135,11 @@ class FileDelete(_PluginBase):
     def list_files(self, directory: Path) -> List[Path]:
         return [file for file in directory.rglob('*') if file.is_file()] 
 
-    def delete_files(self):
+       def delete_files(self):
         logger.info("开始全量删除文件 ...")
         exclude_keywords = [kw.strip() for kw in self._keywords.split(",") if kw.strip()]
         deleted_files_count = 0  # 计数已删除文件
+        size_threshold = int(self._small_dir_size_threshold) * 1024 * 1024  # 转换为字节
 
         for mon_path in self._dirconf.keys():
             logger.info(f"当前监控路径: {mon_path}")
@@ -165,7 +166,13 @@ class FileDelete(_PluginBase):
                         logger.info(f"文件 {file} 包含排除关键词，跳过删除。")
                         continue
                     
-                    logger.info(f"找到文件：{file}")
+                    # 检查文件大小
+                    file_size = file.stat().st_size  # 获取文件大小
+                    if file_size > size_threshold:
+                        logger.info(f"文件 {file} 大小超过阈值，跳过删除。")
+                        continue
+
+                    logger.info(f"找到小文件：{file}，大小：{file_size / 1024 / 1024:.2f} MB")
                     try:
                         os.remove(file)
                         logger.info(f"成功删除文件: {file}")
@@ -173,7 +180,7 @@ class FileDelete(_PluginBase):
                     except Exception as e:
                         logger.error(f"删除文件 {file} 失败：{e}")
 
-        logger.info(f"文件删除操作完成，共删除了 {deleted_files_count} 个文件。")
+        logger.info(f"文件删除操作完成，共删除了 {deleted_files_count} 个小于 {self._small_dir_size_threshold} MB 的文件。")
 
 
     def delete_empty_dirs(self):
@@ -384,8 +391,8 @@ class FileDelete(_PluginBase):
                                         'component': 'VTextField',
                                         'props': {
                                             'model': 'small_dir_size_threshold',
-                                            'label': '删除多大目录 (MB)',
-                                            'placeholder': '设置小于此值的目录将被删除'
+                                            'label': '删除多大文件/目录 (MB)',
+                                            'placeholder': '设置小于此值的文件或目录将被删除'
                                         }
                                     }
                                 ]
