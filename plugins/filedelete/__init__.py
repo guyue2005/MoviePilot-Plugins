@@ -135,7 +135,7 @@ class FileDelete(_PluginBase):
     def list_files(self, directory: Path) -> List[Path]:
         return [file for file in directory.rglob('*') if file.is_file()] 
 
-       def delete_files(self):
+    def delete_files(self):
         logger.info("开始全量删除文件 ...")
         exclude_keywords = [kw.strip() for kw in self._keywords.split(",") if kw.strip()]
         deleted_files_count = 0  # 计数已删除文件
