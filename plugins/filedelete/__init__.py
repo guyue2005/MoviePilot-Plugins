@@ -517,7 +517,7 @@ class FileDelete(_PluginBase):
                                         'props': {
                                             'type': 'info',
                                             'variant': 'tonal',
-                                            'text': '使用方法：1.删除目录。只能独立开启。2.删除文件+删除空目录，3.删除空文件+删除英文目录'
+                                            'text': '使用方法：1.删除目录。只能独立开启。2.删除文件+删除空目录'
                                         }
                                     }
                                 ]
