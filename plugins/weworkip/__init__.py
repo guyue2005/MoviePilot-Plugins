@@ -31,7 +31,7 @@ class WeWorkIP(_PluginBase):
     # 插件版本
     plugin_version = "2.4.1"
     # 插件作者
-    plugin_author = "suraxiuxiu"
+    plugin_author = "原作者suraxiuxiu"
     # 作者主页
     author_url = "https://github.com/suraxiuxiu/MoviePilot-Plugins"
     # 插件配置项ID前缀
