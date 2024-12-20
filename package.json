@@ -19,7 +19,7 @@
   },
     "WeWorkIP": {
         "name": "企微配置IP",
-        "description": "!!docker用户请使用PW版!!定时获取最新动态公网IP，配置到企业微信应用的可信IP列表里。使用selenium运行的版本,适合Windows用户使用",
+        "description": "【去掉站点认证】!!docker用户请使用PW版!!定时获取最新动态公网IP，配置到企业微信应用的可信IP列表里。使用selenium运行的版本,适合Windows用户使用",
         "labels": "消息通知",
         "version": "2.4.1",
         "icon": "https://raw.githubusercontent.com/MoviePilot-Plugins/blob/main/icons/micon.png?raw=true",
@@ -39,7 +39,7 @@
     },
     "WeWorkIPPW": {
         "name": "企微配置IPpw版",
-        "description": "!!docker用户用这个版本!!定时获取最新动态公网IP，配置到企业微信应用的可信IP列表里。使用playWright运行的版本,适合docker用户使用",
+        "description": "【去掉站点认证】!!docker用户用这个版本!!定时获取最新动态公网IP，配置到企业微信应用的可信IP列表里。使用playWright运行的版本,适合docker用户使用",
         "labels": "消息通知",
         "version": "2.4.1",
         "icon": "https://raw.githubusercontent.com/MoviePilot-Plugins/blob/main/icons/micon.png?raw=true",
