@@ -24,11 +24,11 @@ class WeWorkIPPW(_PluginBase):
     # 插件描述
     plugin_desc = "!!docker用户用这个版本!!定时获取最新动态公网IP，配置到企业微信应用的可信IP列表里。"
     # 插件图标
-    plugin_icon = "https://github.com/suraxiuxiu/MoviePilot-Plugins/blob/main/icons/micon.png?raw=true"
+    plugin_icon = "https://github.com/guyue2005/MoviePilot-Plugins/blob/main/icons/micon.png?raw=true"
     # 插件版本
     plugin_version = "2.4.1"
     # 插件作者
-    plugin_author = "suraxiuxiu"
+    plugin_author = "原作者suraxiuxiu"
     # 作者主页
     author_url = "https://github.com/suraxiuxiu/MoviePilot-Plugins"
     # 插件配置项ID前缀
