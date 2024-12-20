@@ -27,7 +27,7 @@ class WeWorkIP(_PluginBase):
     # 插件描述
     plugin_desc = "【去掉站点认证】!!Docker用户请使用Docker版!!定时获取最新动态公网IP，配置到企业微信应用的可信IP列表里。"
     # 插件图标
-    plugin_icon = ""https://raw.githubusercontent.com/guyue2005/MoviePilot-Plugins/blob/main/icons/micon.png?raw=true"
+    plugin_icon = "https://raw.githubusercontent.com/guyue2005/MoviePilot-Plugins/blob/main/icons/micon.png?raw=true"
     # 插件版本
     plugin_version = "2.4.1"
     # 插件作者
