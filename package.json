@@ -6,7 +6,7 @@
     "version": "1.5",
     "icon": "https://raw.githubusercontent.com/guyue2005/MoviePilot-Plugins/main/icons/delete.png",
     "author": "guyue2005",
-    "level": 1,
+    "level": 2,
     "v2": true,
     "history": {
       "v1.5": "增加删除文件大小",
