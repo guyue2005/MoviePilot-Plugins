@@ -2,3 +2,5 @@
 #命名后缀修改
 (?<=\[GM-Team\]\[国漫\]\[.*?\]\[.*?\]\[)202\d => 202\1
 (?<=\[GM-Team\]\[国漫\]\[.*?\]\[.*?\]\[)201\d => 201\1
+Solitary.Gourmet =>  {[tmdbid=55582;type=tv;]}
+Solitary Gourmet =>  {[tmdbid=55582;type=tv;]}
