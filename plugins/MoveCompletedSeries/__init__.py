@@ -10,7 +10,10 @@ class MoveCompletedSeries(_PluginBase):
     plugin_name = "完结剧集搬运"
     plugin_desc = "定时检测剧集是否完结，并将其移动到归档目录"
     plugin_version = "1.0.0"
-    plugin_author = "你的名字"
+    # 插件作者
+    plugin_author = "guyue2005"
+    # 作者主页
+    author_url = "https://github.com/guyue2005"
     plugin_icon = "mdi-movie-check"
     plugin_config_prefix = "movecompleted_"
     plugin_order = 5
