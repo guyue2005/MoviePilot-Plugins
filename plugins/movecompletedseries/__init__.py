@@ -1,7 +1,7 @@
 from app.plugins import _PluginBase
 from apscheduler.triggers.cron import CronTrigger
 # 修正导入路径
-from app.scheduler.scheduler import Scheduler
+from app.core.config import settings
 from app.log import logger
 import os
 import shutil
@@ -21,9 +21,6 @@ class MoveCompletedSeries(_PluginBase):
     plugin_order = 5
     auth_level = 1
 
-    # 获取调度器实例
-    scheduler = None
-
     def __init__(self):
         self._cache = {}
         self._enabled = False
@@ -34,8 +31,6 @@ class MoveCompletedSeries(_PluginBase):
         self._enable_telegram_notify = False
         self._telegram_bot_token = ""
         self._telegram_chat_id = ""
-        # 初始化调度器
-        self.scheduler = Scheduler()
 
     def init_plugin(self, config: dict = None):
         self._enabled = config.get("enabled", False)
@@ -51,7 +46,7 @@ class MoveCompletedSeries(_PluginBase):
         self.stop_service()
 
         if self._enabled:
-            self.scheduler.add_job(
+            self.add_job(
                 self.scan_and_move,
                 CronTrigger.from_crontab(self._cron),
                 id="move_completed_series",
@@ -139,12 +134,11 @@ class MoveCompletedSeries(_PluginBase):
         """
         停止插件服务
         """
-        if self.scheduler:
-            try:
-                self.scheduler.remove_job("move_completed_series")
-                logger.info("完结剧集搬运插件停止成功")
-            except:
-                pass
+        try:
+            self.remove_job("move_completed_series")
+            logger.info("完结剧集搬运插件停止成功")
+        except:
+            pass
 
     def get_state(self) -> bool:
         return self._enabled
@@ -324,4 +318,4 @@ class MoveCompletedSeries(_PluginBase):
             'enable_telegram_notify': False,
             'telegram_bot_token': '',
             'telegram_chat_id': ''
-        }
+        } 
