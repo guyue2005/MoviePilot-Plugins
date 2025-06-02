@@ -22,6 +22,7 @@ class MoveCompletedSeries(_PluginBase):
     auth_level = 1
 
     def __init__(self):
+        super().__init__()
         self._cache = {}
         self._enabled = False
         self._source_dir = "/media/TVShows"
@@ -33,6 +34,8 @@ class MoveCompletedSeries(_PluginBase):
         self._telegram_chat_id = ""
 
     def init_plugin(self, config: dict = None):
+        if not config:
+            return
         self._enabled = config.get("enabled", False)
         self._source_dir = config.get("source_dir", "/media/TVShows")
         self._dest_dir = config.get("dest_dir", "/media/CompletedTVShows")
@@ -143,7 +146,7 @@ class MoveCompletedSeries(_PluginBase):
     def get_state(self) -> bool:
         return self._enabled
 
-    def get_form(self):
+    def get_form(self) -> tuple:
         return [
             {
                 'component': 'VForm',
