@@ -10,9 +10,7 @@ class MoveCompletedSeries(_PluginBase):
     plugin_name = "完结剧集搬运"
     plugin_desc = "定时检测剧集是否完结，并将其移动到归档目录"
     plugin_version = "1.0.0"
-    # 插件作者
     plugin_author = "guyue2005"
-    # 作者主页
     author_url = "https://github.com/guyue2005"
     plugin_icon = "mdi-movie-check"
     plugin_config_prefix = "movecompleted_"
@@ -24,11 +22,10 @@ class MoveCompletedSeries(_PluginBase):
 
     def init_plugin(self, config: dict = None):
         self._enabled = config.get("enabled", False)
-        self._source_dir = config.get("source_dir", "/media/TVShows")
-        self._dest_dir = config.get("dest_dir", "/media/CompletedTVShows")
+        self._source_dir = config.get("source_dir")
+        self._dest_dir = config.get("dest_dir")
         self._tmdb_api_key = config.get("tmdb_api_key", "")
         self._cron = config.get("cron", "0 3 * * *")
-
         self._enable_telegram_notify = config.get("enable_telegram_notify", False)
         self._telegram_bot_token = config.get("telegram_bot_token", "")
         self._telegram_chat_id = config.get("telegram_chat_id", "")
@@ -36,6 +33,10 @@ class MoveCompletedSeries(_PluginBase):
         self.stop_service()
 
         if self._enabled:
+            if not self._source_dir or not self._dest_dir:
+                logger.error("源目录和归档目录必须在配置中填写，插件未启动")
+                return
+
             scheduler.add_job(
                 self.scan_and_move,
                 CronTrigger.from_crontab(self._cron),
@@ -45,6 +46,14 @@ class MoveCompletedSeries(_PluginBase):
             logger.info("完结剧集搬运插件启动成功")
 
     def scan_and_move(self):
+        if not self._source_dir or not os.path.exists(self._source_dir):
+            logger.warning(f"源目录无效或不存在：{self._source_dir}，跳过扫描")
+            return
+
+        if not self._dest_dir:
+            logger.error("归档目录未配置，无法移动剧集")
+            return
+
         if not os.path.exists(self._dest_dir):
             try:
                 os.makedirs(self._dest_dir)
@@ -150,7 +159,7 @@ class MoveCompletedSeries(_PluginBase):
                                         'component': 'VTextField',
                                         'props': {
                                             'model': 'source_dir',
-                                            'label': '剧集目录'
+                                            'label': '剧集目录（必须填写）'
                                         }
                                     }
                                 ]
@@ -163,7 +172,7 @@ class MoveCompletedSeries(_PluginBase):
                                         'component': 'VTextField',
                                         'props': {
                                             'model': 'dest_dir',
-                                            'label': '归档目录'
+                                            'label': '归档目录（必须填写）'
                                         }
                                     }
                                 ]
@@ -238,8 +247,8 @@ class MoveCompletedSeries(_PluginBase):
         ], {
             "enabled": False,
             "tmdb_api_key": "",
-            "source_dir": "/media/TVShows",
-            "dest_dir": "/media/CompletedTVShows",
+            "source_dir": "",
+            "dest_dir": "",
             "cron": "0 3 * * *",
             "enable_telegram_notify": False,
             "telegram_bot_token": "",
