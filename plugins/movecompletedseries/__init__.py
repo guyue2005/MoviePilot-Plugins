@@ -286,4 +286,4 @@ class MoveCompletedSeries(_PluginBase):
     
     # 返回插件页面
     def get_page(self) -> List[Dict[str, Any]]:
-        return [] 
+        return []
