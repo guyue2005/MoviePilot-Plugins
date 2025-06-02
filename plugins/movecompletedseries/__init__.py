@@ -7,6 +7,7 @@ import os
 import shutil
 import requests
 import time
+from typing import List, Dict, Any, Tuple
 
 class MoveCompletedSeries(_PluginBase):
     plugin_name = "完结剧集搬运"
@@ -146,7 +147,7 @@ class MoveCompletedSeries(_PluginBase):
     def get_state(self) -> bool:
         return self._enabled
 
-    def get_form(self) -> tuple:
+    def get_form(self) -> Tuple[List[dict], Dict[str, Any]]:
         return [
             {
                 'component': 'VForm',
@@ -321,4 +322,16 @@ class MoveCompletedSeries(_PluginBase):
             'enable_telegram_notify': False,
             'telegram_bot_token': '',
             'telegram_chat_id': ''
-        } 
+        }
+        
+    def get_api(self) -> List[Dict[str, Any]]:
+        """
+        返回插件API接口
+        """
+        return []
+        
+    def get_page(self) -> List[Dict[str, Any]]:
+        """
+        返回插件页面
+        """
+        return [] 
