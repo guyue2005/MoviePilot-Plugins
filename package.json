@@ -3,7 +3,7 @@
     "name": "完结剧集搬运",
     "description": "定时检测剧集是否完结，并将其移动到归档目录，支持搬运时发送Telegram通知",
     "labels": "剧集搬运,自动归档,通知",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "icon": "mdi-movie-check",
     "author": "guyue2005",
     "level": 1,
