@@ -1,12 +1,11 @@
 from app.plugins import _PluginBase
 from apscheduler.triggers.cron import CronTrigger
-# 修正导入路径
 from app.core.config import settings
 from app.log import logger
+from app.utils.commons import singleton
+from app.helper import MetaHelper, MessageHelper
 import os
 import shutil
-import requests
-import time
 from typing import List, Dict, Any, Tuple
 
 class MoveCompletedSeries(_PluginBase):
@@ -28,11 +27,12 @@ class MoveCompletedSeries(_PluginBase):
         self._enabled = False
         self._source_dir = "/media/TVShows"
         self._dest_dir = "/media/CompletedTVShows"
-        self._tmdb_api_key = ""
         self._cron = "0 3 * * *"
         self._enable_telegram_notify = False
-        self._telegram_bot_token = ""
-        self._telegram_chat_id = ""
+        # 初始化元数据助手
+        self.meta_helper = MetaHelper()
+        # 初始化消息助手
+        self.message_helper = MessageHelper()
 
     def init_plugin(self, config: dict = None):
         if not config:
@@ -40,12 +40,8 @@ class MoveCompletedSeries(_PluginBase):
         self._enabled = config.get("enabled", False)
         self._source_dir = config.get("source_dir", "/media/TVShows")
         self._dest_dir = config.get("dest_dir", "/media/CompletedTVShows")
-        self._tmdb_api_key = config.get("tmdb_api_key", "")
         self._cron = config.get("cron", "0 3 * * *")
-
         self._enable_telegram_notify = config.get("enable_telegram_notify", False)
-        self._telegram_bot_token = config.get("telegram_bot_token", "")
-        self._telegram_chat_id = config.get("telegram_chat_id", "")
 
         self.stop_service()
 
@@ -76,7 +72,11 @@ class MoveCompletedSeries(_PluginBase):
                     target_path = os.path.join(self._dest_dir, series_name)
                     logger.info(f"{series_name} 已完结，移动中...")
                     shutil.move(path, target_path)
-                    self.send_telegram_message(f"剧集《{series_name}》已完结，已移动到归档目录。")
+                    if self._enable_telegram_notify:
+                        self.message_helper.send_message(
+                            title="完结剧集搬运",
+                            text=f"剧集《{series_name}》已完结，已移动到归档目录。"
+                        )
             except Exception as e:
                 logger.error(f"处理剧集 {series_name} 时出错: {e}")
 
@@ -85,27 +85,15 @@ class MoveCompletedSeries(_PluginBase):
             return self._cache[series_name]
 
         try:
-            url = "https://api.themoviedb.org/3/search/tv"
-            r = requests.get(url, params={"api_key": self._tmdb_api_key, "query": series_name}, timeout=10)
-            results = r.json().get("results", [])
-            if not results:
+            # 使用系统自带的TMDB功能查询剧集信息
+            tmdb_info = self.meta_helper.get_tmdb_info(title=series_name, mtype="tv")
+            if not tmdb_info:
                 logger.warning(f"未找到剧集：{series_name}")
                 self._cache[series_name] = False
                 return False
             
-            series_id = results[0].get("id")
-            if not series_id:
-                logger.warning(f"未找到剧集ID：{series_name}")
-                self._cache[series_name] = False
-                return False
-                
-            # 获取剧集详情
-            detail_url = f"https://api.themoviedb.org/3/tv/{series_id}"
-            r = requests.get(detail_url, params={"api_key": self._tmdb_api_key}, timeout=10)
-            detail = r.json()
-            
             # 检查剧集是否已完结
-            status = detail.get("status")
+            status = tmdb_info.get("status")
             if status and status.lower() in ["ended", "canceled"]:
                 logger.info(f"剧集 {series_name} 已完结，状态: {status}")
                 self._cache[series_name] = True
@@ -117,22 +105,6 @@ class MoveCompletedSeries(_PluginBase):
         except Exception as e:
             logger.error(f"检查剧集 {series_name} 状态时出错: {e}")
             return False
-
-    def send_telegram_message(self, message: str):
-        if not self._enable_telegram_notify or not self._telegram_bot_token or not self._telegram_chat_id:
-            return
-            
-        try:
-            url = f"https://api.telegram.org/bot{self._telegram_bot_token}/sendMessage"
-            data = {
-                "chat_id": self._telegram_chat_id,
-                "text": message,
-                "parse_mode": "HTML"
-            }
-            requests.post(url, data=data, timeout=10)
-            logger.info(f"Telegram通知发送成功: {message}")
-        except Exception as e:
-            logger.error(f"发送Telegram通知失败: {e}")
 
     def stop_service(self):
         """
@@ -225,72 +197,12 @@ class MoveCompletedSeries(_PluginBase):
                                     {
                                         'component': 'VTextField',
                                         'props': {
-                                            'model': 'tmdb_api_key',
-                                            'label': 'TMDB API密钥',
-                                            'placeholder': '输入你的TMDB API密钥'
-                                        }
-                                    }
-                                ]
-                            },
-                            {
-                                'component': 'VCol',
-                                'props': {
-                                    'cols': 12,
-                                    'md': 6
-                                },
-                                'content': [
-                                    {
-                                        'component': 'VTextField',
-                                        'props': {
                                             'model': 'cron',
                                             'label': '执行周期',
                                             'placeholder': '0 3 * * *'
                                         }
                                     }
                                 ]
-                            }
-                        ]
-                    },
-                    {
-                        'component': 'VRow',
-                        'content': [
-                            {
-                                'component': 'VCol',
-                                'props': {
-                                    'cols': 12,
-                                    'md': 4
-                                },
-                                'content': [
-                                    {
-                                        'component': 'VSwitch',
-                                        'props': {
-                                            'model': 'enable_telegram_notify',
-                                            'label': '启用Telegram通知',
-                                        }
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        'component': 'VRow',
-                        'content': [
-                            {
-                                'component': 'VCol',
-                                'props': {
-                                    'cols': 12,
-                                    'md': 6
-                                },
-                                'content': [
-                                    {
-                                        'component': 'VTextField',
-                                        'props': {
-                                            'model': 'telegram_bot_token',
-                                            'label': 'Telegram Bot Token',
-                                            'placeholder': '输入你的Telegram Bot Token'
-                                        }
-                                    }
-                                ]
                             },
                             {
                                 'component': 'VCol',
@@ -300,11 +212,10 @@ class MoveCompletedSeries(_PluginBase):
                                 },
                                 'content': [
                                     {
-                                        'component': 'VTextField',
+                                        'component': 'VSwitch',
                                         'props': {
-                                            'model': 'telegram_chat_id',
-                                            'label': 'Telegram Chat ID',
-                                            'placeholder': '输入你的Telegram Chat ID'
+                                            'model': 'enable_telegram_notify',
+                                            'label': '启用通知',
                                         }
                                     }
                                 ]
@@ -317,19 +228,16 @@ class MoveCompletedSeries(_PluginBase):
             'enabled': False,
             'source_dir': '/media/TVShows',
             'dest_dir': '/media/CompletedTVShows',
-            'tmdb_api_key': '',
             'cron': '0 3 * * *',
-            'enable_telegram_notify': False,
-            'telegram_bot_token': '',
-            'telegram_chat_id': ''
+            'enable_telegram_notify': False
         }
-        
+    
     def get_api(self) -> List[Dict[str, Any]]:
         """
         返回插件API接口
         """
         return []
-        
+    
     def get_page(self) -> List[Dict[str, Any]]:
         """
         返回插件页面
