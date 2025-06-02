@@ -1,10 +1,12 @@
-from app.plugins import _PluginBase
-from apscheduler.triggers.cron import CronTrigger
-from app.core.scheduler import scheduler
-from app.log import logger
 import os
 import shutil
 import requests
+from plugins import _PluginBase
+from log import logger
+from core.scheduler import scheduler  # ✅ 修正路径
+
+from apscheduler.triggers.cron import CronTrigger
+
 
 class MoveCompletedSeries(_PluginBase):
     plugin_name = "完结剧集搬运"
@@ -22,10 +24,11 @@ class MoveCompletedSeries(_PluginBase):
 
     def init_plugin(self, config: dict = None):
         self._enabled = config.get("enabled", False)
-        self._source_dir = config.get("source_dir")
-        self._dest_dir = config.get("dest_dir")
+        self._source_dir = config.get("source_dir", "")
+        self._dest_dir = config.get("dest_dir", "")
         self._tmdb_api_key = config.get("tmdb_api_key", "")
         self._cron = config.get("cron", "0 3 * * *")
+
         self._enable_telegram_notify = config.get("enable_telegram_notify", False)
         self._telegram_bot_token = config.get("telegram_bot_token", "")
         self._telegram_chat_id = config.get("telegram_chat_id", "")
@@ -34,7 +37,7 @@ class MoveCompletedSeries(_PluginBase):
 
         if self._enabled:
             if not self._source_dir or not self._dest_dir:
-                logger.error("源目录和归档目录必须在配置中填写，插件未启动")
+                logger.error("未配置 source_dir 或 dest_dir，插件未启动")
                 return
 
             scheduler.add_job(
@@ -46,14 +49,6 @@ class MoveCompletedSeries(_PluginBase):
             logger.info("完结剧集搬运插件启动成功")
 
     def scan_and_move(self):
-        if not self._source_dir or not os.path.exists(self._source_dir):
-            logger.warning(f"源目录无效或不存在：{self._source_dir}，跳过扫描")
-            return
-
-        if not self._dest_dir:
-            logger.error("归档目录未配置，无法移动剧集")
-            return
-
         if not os.path.exists(self._dest_dir):
             try:
                 os.makedirs(self._dest_dir)
@@ -124,26 +119,14 @@ class MoveCompletedSeries(_PluginBase):
                                 'component': 'VCol',
                                 'props': {'cols': 12, 'md': 6},
                                 'content': [
-                                    {
-                                        'component': 'VSwitch',
-                                        'props': {
-                                            'model': 'enabled',
-                                            'label': '启用插件'
-                                        }
-                                    }
+                                    {'component': 'VSwitch', 'props': {'model': 'enabled', 'label': '启用插件'}}
                                 ]
                             },
                             {
                                 'component': 'VCol',
                                 'props': {'cols': 12, 'md': 6},
                                 'content': [
-                                    {
-                                        'component': 'VTextField',
-                                        'props': {
-                                            'model': 'tmdb_api_key',
-                                            'label': 'TMDb API Key'
-                                        }
-                                    }
+                                    {'component': 'VTextField', 'props': {'model': 'tmdb_api_key', 'label': 'TMDb API Key'}}
                                 ]
                             }
                         ]
@@ -155,26 +138,14 @@ class MoveCompletedSeries(_PluginBase):
                                 'component': 'VCol',
                                 'props': {'cols': 12, 'md': 6},
                                 'content': [
-                                    {
-                                        'component': 'VTextField',
-                                        'props': {
-                                            'model': 'source_dir',
-                                            'label': '剧集目录（必须填写）'
-                                        }
-                                    }
+                                    {'component': 'VTextField', 'props': {'model': 'source_dir', 'label': '剧集目录'}}
                                 ]
                             },
                             {
                                 'component': 'VCol',
                                 'props': {'cols': 12, 'md': 6},
                                 'content': [
-                                    {
-                                        'component': 'VTextField',
-                                        'props': {
-                                            'model': 'dest_dir',
-                                            'label': '归档目录（必须填写）'
-                                        }
-                                    }
+                                    {'component': 'VTextField', 'props': {'model': 'dest_dir', 'label': '归档目录'}}
                                 ]
                             }
                         ]
@@ -186,14 +157,7 @@ class MoveCompletedSeries(_PluginBase):
                                 'component': 'VCol',
                                 'props': {'cols': 12, 'md': 6},
                                 'content': [
-                                    {
-                                        'component': 'VTextField',
-                                        'props': {
-                                            'model': 'cron',
-                                            'label': 'Cron 表达式（定时检测）',
-                                            'placeholder': '0 3 * * *'
-                                        }
-                                    }
+                                    {'component': 'VTextField', 'props': {'model': 'cron', 'label': 'Cron 表达式（定时检测）'}}
                                 ]
                             }
                         ]
@@ -205,39 +169,21 @@ class MoveCompletedSeries(_PluginBase):
                                 'component': 'VCol',
                                 'props': {'cols': 12, 'md': 4},
                                 'content': [
-                                    {
-                                        'component': 'VSwitch',
-                                        'props': {
-                                            'model': 'enable_telegram_notify',
-                                            'label': '启用搬运通知（Telegram）'
-                                        }
-                                    }
+                                    {'component': 'VSwitch', 'props': {'model': 'enable_telegram_notify', 'label': '启用 Telegram 通知'}}
                                 ]
                             },
                             {
                                 'component': 'VCol',
                                 'props': {'cols': 12, 'md': 4},
                                 'content': [
-                                    {
-                                        'component': 'VTextField',
-                                        'props': {
-                                            'model': 'telegram_bot_token',
-                                            'label': 'Telegram Bot Token'
-                                        }
-                                    }
+                                    {'component': 'VTextField', 'props': {'model': 'telegram_bot_token', 'label': 'Telegram Bot Token'}}
                                 ]
                             },
                             {
                                 'component': 'VCol',
                                 'props': {'cols': 12, 'md': 4},
                                 'content': [
-                                    {
-                                        'component': 'VTextField',
-                                        'props': {
-                                            'model': 'telegram_chat_id',
-                                            'label': 'Telegram Chat ID'
-                                        }
-                                    }
+                                    {'component': 'VTextField', 'props': {'model': 'telegram_chat_id', 'label': 'Telegram Chat ID'}}
                                 ]
                             }
                         ]
