@@ -11,7 +11,7 @@ from typing import List, Dict, Any, Tuple
 class MoveCompletedSeries(_PluginBase):
     plugin_name = "完结剧集搬运"
     plugin_desc = "定时检测剧集是否完结，并将其移动到归档目录"
-    plugin_version = "1.0.0"
+    plugin_version = "1.1.0"
     # 插件作者
     plugin_author = "guyue2005"
     # 作者主页
