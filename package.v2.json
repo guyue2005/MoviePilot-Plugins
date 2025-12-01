@@ -1,0 +1,76 @@
+
+{
+  "MoveCompletedSeries": {
+    "name": "完结剧集搬运",
+    "description": "定时检测剧集是否完结，并将其移动到归档目录，支持搬运时发送Telegram通知",
+    "labels": "剧集搬运,自动归档,通知",
+    "version": "1.1.0",
+    "icon": "mdi-movie-check",
+    "author": "guyue2005",
+    "level": 1,
+    "v2": true,
+    "history": {
+      "v1.1.0": "使用系统内置TMDB和通知功能，移除自定义API配置，简化使用",
+      "v1.0.1": "修复插件加载问题，优化代码结构",
+      "v1.0.0": "初始版本，支持检测剧集完结并移动，支持Telegram通知"
+    }
+  },
+  "FileDelete": {
+    "name": "云盘无用文件删除",
+    "description": "根据关键词删除特定格式的文件",
+    "labels": "工具",
+    "version": "1.5",
+    "icon": "https://raw.githubusercontent.com/guyue2005/MoviePilot-Plugins/main/icons/delete.png",
+    "author": "guyue2005",
+    "level": 1,
+    "v2": true,
+    "history": {
+      "v1.5": "增加删除文件大小",
+      "v1.4": "增加空文件的删除选项",
+      "v1.3": "增加文件格式选项",
+      "v1.2": "添加关键词的识别",
+      "v1.1": "修正删除无日志的问题",
+      "v1.0": "自定义删除指定文件"
+    }
+  },
+  "WeWorkIP": {
+    "name": "企微配置IP",
+    "description": "【去掉站点认证】!!docker用户请使用PW版!!定时获取最新动态公网IP，配置到企业微信应用的可信IP列表里。使用selenium运行的版本,适合Windows用户使用",
+    "labels": "消息通知",
+    "version": "2.4.1",
+    "icon": "https://raw.githubusercontent.com/guyue2005/MoviePilot-Plugins/main/icons/micon.png",
+    "author": "原作者suraxiuxiu",
+    "level": 1,
+    "v2": true,
+    "history": {
+      "v2.4.1": "修改默认通知间隔",
+      "v2.4": "添加支持验证码功能，添加手动登录，更改通知机制",
+      "v2.3": "添加网络检测机制",
+      "v2.2": "修正通知方式,适配2.0",
+      "v2.1": "修正内置登录缓存BUG",
+      "v2.0": "添加内置扫码登录功能",
+      "v1.2": "优化CC同步时机;修正无头模式；尝试适配v2版本",
+      "v1.1": "优化cookie获取方式;支持多个应用地址,用,号分隔应用网址。"
+    }
+  },
+  "WeWorkIPPW": {
+    "name": "企微配置IPpw版",
+    "description": "【去掉站点认证】!!docker用户用这个版本!!定时获取最新动态公网IP，配置到企业微信应用的可信IP列表里。使用playWright运行的版本,适合docker用户使用",
+    "labels": "消息通知",
+    "version": "2.4.1",
+    "icon": "https://raw.githubusercontent.com/guyue2005/MoviePilot-Plugins/main/icons/micon.png",
+    "author": "原作者suraxiuxiu",
+    "level": 1,
+    "v2": true,
+    "history": {
+      "v2.4.1": "修改默认通知间隔",
+      "v2.4": "添加支持验证码功能，添加手动登录，更改通知机制",
+      "v2.3": "添加网络检测机制",
+      "v2.2": "修正通知方式,适配2.0",
+      "v2.1": "修正内置登录缓存BUG",
+      "v2.0": "添加内置扫码登录功能",
+      "v1.2": "优化CC同步时机;修正无头模式；尝试适配v2版本",
+      "v1.1": "优化cookie获取方式;支持多个应用地址,用,号分隔应用网址。"
+    }
+  }
+}
