@@ -27,7 +27,7 @@ class FileDelete(_PluginBase):
     # 加载顺序
     plugin_order = 30
     # 可使用的用户级别
-    auth_level = 2
+    auth_level = 1
 
     _scheduler = None
     _enabled = False
