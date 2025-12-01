@@ -1,9 +1,11 @@
 import os
+import asyncio
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
-from app.plugins import _PluginV2Base  # v2 基类
+from app.plugins import _PluginV2Base
 from app.core.config import settings
-import asyncio
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import random
 
 class FileDeleteV2(_PluginV2Base):
     plugin_name = "云盘无用文件删除"
@@ -20,13 +22,14 @@ class FileDeleteV2(_PluginV2Base):
         self._scheduler = None
         self._enabled = False
         self._onlyonce = False
-        self._monitor_dirs = []
-        self._keywords = []
+        self._monitor_dirs: List[str] = []
+        self._keywords: List[str] = []
         self._delete_files_enabled = True
         self._delete_empty_dirs = False
         self._delete_small_dirs = False
         self._small_dir_size_threshold = 10
         self._cron = ""
+        self._delay = "20,1-10"
 
     async def init_plugin(self, config: dict = None):
         if config:
@@ -39,6 +42,7 @@ class FileDeleteV2(_PluginV2Base):
             self._delete_small_dirs = config.get("delete_small_dirs", False)
             self._small_dir_size_threshold = int(config.get("small_dir_size_threshold", 10))
             self._cron = config.get("cron", "")
+            self._delay = config.get("delay", "20,1-10")
 
         if self._onlyonce:
             await self.run_enabled_deletion_methods()
@@ -46,13 +50,17 @@ class FileDeleteV2(_PluginV2Base):
             self.update_config({"onlyonce": False})
 
         if self._enabled and self._cron:
-            # v2 使用异步调度
             asyncio.create_task(self._cron_job())
 
     async def _cron_job(self):
-        from apscheduler.schedulers.asyncio import AsyncIOScheduler
+        if not self._cron:
+            return
         scheduler = AsyncIOScheduler(timezone=settings.TZ)
-        hour, minute, day, month, day_of_week = self._cron.split()[1:6]
+        cron_parts = self._cron.split()
+        if len(cron_parts) != 5:
+            self.logger.error(f"Cron 表达式格式不正确: {self._cron}")
+            return
+        minute, hour, day, month, day_of_week = cron_parts
         scheduler.add_job(
             self.run_enabled_deletion_methods,
             trigger='cron',
@@ -63,6 +71,7 @@ class FileDeleteV2(_PluginV2Base):
             day_of_week=day_of_week
         )
         scheduler.start()
+        self._scheduler = scheduler
 
     async def run_enabled_deletion_methods(self):
         if self._delete_files_enabled:
@@ -89,6 +98,7 @@ class FileDeleteV2(_PluginV2Base):
                     try:
                         file.unlink()
                         self.logger.info(f"删除文件: {file}")
+                        await asyncio.sleep(self._get_delay())
                     except Exception as e:
                         self.logger.error(f"删除失败: {file}, {e}")
 
@@ -124,13 +134,97 @@ class FileDeleteV2(_PluginV2Base):
                         except Exception as e:
                             self.logger.error(f"删除失败: {dir_path}, {e}")
 
+    def _get_delay(self) -> float:
+        """解析随机延时，例如 '20,1-10' 表示处理20个文件后随机延时1-10秒"""
+        try:
+            parts = self._delay.split(',')
+            if len(parts) == 2 and '-' in parts[1]:
+                min_sec, max_sec = map(int, parts[1].split('-'))
+                return random.randint(min_sec, max_sec)
+        except Exception:
+            pass
+        return 0
+
     def get_form(self) -> Tuple[List[dict], dict]:
-        # v2 表单结构，保持原逻辑
         return [
             {
                 "component": "VForm",
                 "content": [
-                    # ...表单字段保持原样...
+                    {
+                        "component": "VRow",
+                        "content": [
+                            {
+                                "component": "VCol",
+                                "props": {"cols": 12, "md": 4},
+                                "content": [{"component": "VSwitch", "props": {"model": "enabled", "label": "启用插件"}}]
+                            },
+                            {
+                                "component": "VCol",
+                                "props": {"cols": 12, "md": 4},
+                                "content": [{"component": "VSwitch", "props": {"model": "delete_files_enabled", "label": "启用删除文件"}}]
+                            },
+                            {
+                                "component": "VCol",
+                                "props": {"cols": 12, "md": 4},
+                                "content": [{"component": "VSwitch", "props": {"model": "delete_empty_dirs", "label": "删除空目录"}}]
+                            }
+                        ]
+                    },
+                    {
+                        "component": "VRow",
+                        "content": [
+                            {
+                                "component": "VCol",
+                                "props": {"cols": 12, "md": 4},
+                                "content": [{"component": "VSwitch", "props": {"model": "onlyonce", "label": "立即运行一次"}}]
+                            },
+                            {
+                                "component": "VCol",
+                                "props": {"cols": 12, "md": 4},
+                                "content": [{"component": "VSwitch", "props": {"model": "delete_small_dirs", "label": "启用删除全部目录"}}]
+                            },
+                            {
+                                "component": "VCol",
+                                "props": {"cols": 12, "md": 4},
+                                "content": [{"component": "VTextField", "props": {"model": "small_dir_size_threshold", "label": "删除多大文件/目录 (MB)"}}]
+                            }
+                        ]
+                    },
+                    {
+                        "component": "VRow",
+                        "content": [
+                            {
+                                "component": "VCol",
+                                "props": {"cols": 12},
+                                "content": [{"component": "VTextarea", "props": {"model": "monitor_dirs", "label": "监控目录", "rows": 5, "placeholder": "每行一个监控目录"}}]
+                            }
+                        ]
+                    },
+                    {
+                        "component": "VRow",
+                        "content": [
+                            {
+                                "component": "VCol",
+                                "props": {"cols": 12},
+                                "content": [{"component": "VTextarea", "props": {"model": "keywords", "label": "排除关键词", "rows": 2, "placeholder": "关键词1,关键词2"}}]
+                            }
+                        ]
+                    },
+                    {
+                        "component": "VRow",
+                        "content": [
+                            {
+                                "component": "VCol",
+                                "props": {"cols": 12, "md": 4},
+                                "content": [{"component": "VTextField", "props": {"model": "cron", "label": "定时删除周期", "placeholder": "5位cron表达式，留空关闭"}}]
+                            },
+                            {
+                                "component": "VCol",
+                                "props": {"cols": 12, "md": 4},
+                                "content": [{"component": "VTextField", "props": {"model": "delay", "label": "随机延时", "placeholder": "20,1-10"}}]
+                            }
+                        ]
+                    }
                 ]
             }
         ], {
@@ -142,5 +236,13 @@ class FileDeleteV2(_PluginV2Base):
             "delete_files_enabled": False,
             "delete_empty_dirs": False,
             "delete_small_dirs": False,
-            "small_dir_size_threshold": 10
+            "small_dir_size_threshold": 10,
+            "delay": "20,1-10"
         }
+
+    async def stop_service(self):
+        if self._scheduler:
+            self._scheduler.remove_all_jobs()
+            if self._scheduler.running:
+                self._scheduler.shutdown()
+            self._scheduler = None
